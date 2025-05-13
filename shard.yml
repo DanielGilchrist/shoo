@@ -1,0 +1,13 @@
+name: shoo
+version: 0.1.0
+
+authors:
+  - Daniel Gilchrist <danniieelg@gmail.com>
+
+targets:
+  shoo:
+    main: src/shoo.cr
+
+crystal: '>= 1.16.1'
+
+license: MIT
