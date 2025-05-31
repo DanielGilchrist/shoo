@@ -1,6 +1,6 @@
 # shoo
 
-A CLI utility for managing GitHub notifications with configurable purging rules.
+A CLI utility for managing GitHub notifications with configurable filtering rules.
 
 ## Installation
 
@@ -9,7 +9,7 @@ TODO: Write installation instructions here
 ## Usage
 
 ```bash
-# Purge notifications based on your configuration
+# Filter notifications based on your configuration
 shoo notification purge
 ```
 
@@ -19,7 +19,7 @@ Create `~/.config/shoo/config.yml`:
 
 ```yaml
 github:
-  token: "your_github_token_here"  # Optional, can use SHOO_GITHUB_TOKEN env variable
+  token: "your_github_token_here"  # Optional, can use SHOO_GITHUB_TOKEN env variable instead
 
 notifications:
   purge:
@@ -29,8 +29,6 @@ notifications:
         author_in_teams: ["core-team", "security-team"]
         authors: ["DanielGilchrist", "trusted-maintainer"]
         mentioned_users: ["DanielGilchrist"]
-        labels: ["urgent", "security"]
-        pr_states: ["draft"]
 
     # Repo-specific rules (override global)
     repos:
@@ -43,6 +41,18 @@ notifications:
         keep_if:
           authors: ["DanielGilchrist"]
 ```
+
+## How it works
+
+Shoo will always keep notifications for:
+- PRs/issues you authored (`reason="author"`)
+- Direct mentions (`reason="mention"`)
+
+Additionally, it will keep notifications from PRs/issues where the author:
+- Is in your `authors` list
+- Is a member of teams listed in `author_in_teams`
+
+All other notifications (like CI activity, comments from irrelevant users) will be marked for purging.
 
 ## Development
 

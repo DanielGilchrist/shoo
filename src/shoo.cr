@@ -15,9 +15,27 @@ module Shoo
         parser.on("purge", "Purge unwanted notifications") do
           config = Config.load
           token = retrieve_token!(config)
+
           client = API::Client.new(token)
-          result = client.notifications.list
-          pp!(result)
+          notifications = client.notifications.list.or do |error|
+            puts "Error fetching notifications: #{error.message}"
+            exit 1
+          end
+
+          filter = NotificationFilter.new(config, client)
+          notifications_to_keep = notifications.select { |n| filter.should_keep?(n) }
+          notifications_to_purge = notifications.reject { |n| filter.should_keep?(n) }
+
+          puts "Total notifications: #{notifications.size}"
+          puts "Keeping: #{notifications_to_keep.size}"
+          puts "Purging: #{notifications_to_purge.size}"
+
+          puts "\n--- KEEPING ---"
+          notifications_to_keep.each do |n|
+            puts "#{n.reason} | #{n.subject.title}"
+          end
+
+          pp!(notifications_to_keep[0])
         end
 
         define_help(parser)
