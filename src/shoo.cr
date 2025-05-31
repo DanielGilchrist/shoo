@@ -14,8 +14,10 @@ module Shoo
       parser.on("notification", "Commands for notifications") do
         parser.on("purge", "Purge unwanted notifications") do
           config = Config.load
-          pp!(config)
-          puts "PURGED"
+          token = retrieve_token!(config)
+          client = API::Client.new(token)
+          result = client.notifications.list
+          pp!(result)
         end
 
         define_help(parser)
@@ -33,6 +35,17 @@ module Shoo
   private def help(parser : OptionParser)
     puts parser
     exit
+  end
+
+  private def retrieve_token!(config : Config)
+    token = config.github.github_token
+
+    if token.nil? || token.blank?
+      puts "GitHub token not provided!"
+      exit
+    end
+
+    token
   end
 end
 
