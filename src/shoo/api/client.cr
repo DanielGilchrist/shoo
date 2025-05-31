@@ -7,7 +7,7 @@ module Shoo
       BASE_URL = "https://api.github.com"
 
       def initialize(@token : String)
-        @http_client = HTTP::Client.new(URI.parse(BASE_URL))
+        @base_uri = URI.parse(BASE_URL)
       end
 
       def notifications : Notifications
@@ -31,7 +31,7 @@ module Shoo
           {% raise "Type #{T} must include JSON::Serializable" %}
         {% end %}
 
-        response = @http_client.get(path, headers)
+        response = HTTP::Client.get("#{BASE_URL}#{path}", headers: headers)
         API::Result.new((response.success? ? T : GitHubError).from_json(response.body))
       end
 

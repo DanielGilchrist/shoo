@@ -10,9 +10,8 @@ module Shoo
           exit 1
         end
 
-        filter = NotificationFilter.new(@config, client)
-        notifications_to_keep = notifications.select { |n| filter.should_keep?(n) }
-        notifications_to_purge = notifications.reject { |n| filter.should_keep?(n) }
+        notification_filter = NotificationFilter.new(@config, client)
+        notifications_to_keep, notifications_to_purge = notification_filter.filter(notifications)
 
         puts "Total notifications: #{notifications.size}"
 

@@ -1,11 +1,18 @@
 module Shoo
   struct NotificationFilter
     def initialize(@config : Config, @client : API::Client)
-      @author_cache = Cache(String).new
       @team_cache = Cache(Array(API::User)).new
     end
 
-    def should_keep?(notification : API::Notification) : Bool
+    def filter(notifications : Array(API::Notification)) : {Array(API::Notification), Array(API::Notification)}
+      authors = fetch_authors_concurrently(notifications)
+
+      notifications.partition do |notification|
+        should_keep?(notification, authors)
+      end
+    end
+
+    private def should_keep?(notification : API::Notification, authors : Hash(String, String)) : Bool
       rules = rules_for_repo(notification.repository.full_name)
       keep_rules = rules.keep_if
 
@@ -13,8 +20,11 @@ module Shoo
       return true if notification.authored?
       return false unless notification.subject.should_check_author?
 
-      author = extract_author(notification)
-      return false if author.empty?
+      url = notification.subject.url
+      return false unless url
+
+      author = authors[url]?
+      return false if !author || author.empty?
       return true if keep_rules.authors.includes?(author)
       return true if author_in_teams?(author, keep_rules.author_in_teams, notification.repository.full_name)
 
@@ -25,20 +35,41 @@ module Shoo
       @config.notifications.purge.repos[repo_name]? || @config.notifications.purge.global
     end
 
-    private def extract_author(notification : API::Notification) : String
-      url = notification.subject.url
-      return "" unless url
+    private def fetch_authors_concurrently(notifications : Array(API::Notification)) : Hash(String, String)
+      authors = {} of String => String
 
-      @author_cache.fetch(url) do
-        case notification.subject.type
-        when .pull_request?
-          @client.pull_requests.get(url).map_or("") { |pr| pr.user.login }
-        when .issue?
-          @client.issues.get(url).map_or("") { |issue| issue.user.login }
-        else
-          ""
+      urls_to_fetch = notifications.compact_map do |notification|
+        next unless notification.subject.should_check_author?
+        next if notification.authored?
+
+        notification.subject.url
+      end.uniq
+
+      channels = urls_to_fetch.map do |url|
+        channel = Channel(Tuple(String, String)).new
+
+        spawn do
+          author = case url
+                   when /\/pulls\/\d+$/
+                     @client.pull_requests.get(url).map_or("") { |pr| pr.user.login }
+                   when /\/issues\/\d+$/
+                     @client.issues.get(url).map_or("") { |issue| issue.user.login }
+                   else
+                     ""
+                   end
+
+          channel.send({url, author})
         end
+
+        channel
       end
+
+      channels.each do |channel|
+        url, author = channel.receive
+        authors[url] = author
+      end
+
+      authors
     end
 
     private def notification_mentions_user?(notification : API::Notification, _user : String) : Bool
