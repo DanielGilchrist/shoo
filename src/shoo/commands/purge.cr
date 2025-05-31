@@ -15,15 +15,20 @@ module Shoo
         notifications_to_purge = notifications.reject { |n| filter.should_keep?(n) }
 
         puts "Total notifications: #{notifications.size}"
-        puts "Keeping: #{notifications_to_keep.size}"
-        puts "Purging: #{notifications_to_purge.size}"
 
-        puts "\n--- KEEPING ---"
+        puts "\n--- KEEPING (#{notifications_to_keep.size}) ---"
         notifications_to_keep.each do |n|
           puts "#{n.reason} | #{n.subject.title}"
         end
 
-        pp!(notifications_to_keep[0])
+        puts "\n--- REMOVING (#{notifications_to_purge.size}) ---"
+        notifications_to_purge.each do |n|
+          puts "#{n.reason} | #{n.subject.title}"
+        end
+
+        pp!(notifications_to_keep[0..10])
+        puts
+        pp!(notifications_to_purge.reject(&.reason.==("ci_activity"))[0..10])
       end
     end
   end
