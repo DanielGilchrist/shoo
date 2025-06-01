@@ -28,14 +28,14 @@ notifications:
       keep_if:
         author_in_teams: ["core-team", "security-team"]
         authors: ["DanielGilchrist", "trusted-maintainer"]
-        mentioned_users: ["DanielGilchrist"]
+        mentioned: false
 
     # Repo-specific rules (override global)
     repos:
       "my-org/critical-repo":
         keep_if:
           author_in_teams: ["core-team"]
-          mentioned_users: ["DanielGilchrist"]
+          mentioned: true
 
       "my-org/experimental-repo":
         keep_if:
@@ -46,11 +46,11 @@ notifications:
 
 Shoo will always keep notifications for:
 - PRs/issues you authored (`reason="author"`)
-- Direct mentions (`reason="mention"`)
 
-Additionally, it will keep notifications from PRs/issues where the author:
-- Is in your `authors` list
-- Is a member of teams listed in `author_in_teams`
+Additionally, it will keep notifications from PRs/issues where:
+- The author is in your `authors` list
+- The author is a member of teams listed in `author_in_teams`
+- You were mentioned and `mentioned: true` is set
 
 All other notifications (like CI activity, comments from irrelevant users) will be marked for purging.
 

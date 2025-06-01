@@ -54,7 +54,7 @@ module Shoo
 
     property author_in_teams : Array(String) = [] of String
     property authors : Array(String) = [] of String
-    property mentioned_users : Array(String) = [] of String
+    property? mentioned : Bool = false
     property labels : Array(String) = [] of String
     property pr_states : Array(String) = [] of String
 

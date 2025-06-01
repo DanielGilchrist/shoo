@@ -16,7 +16,7 @@ module Shoo
       rules = rules_for_repo(notification.repository.full_name)
       keep_rules = rules.keep_if
 
-      return true if keep_rules.mentioned_users.any? { |user| notification_mentions_user?(notification, user) }
+      return true if keep_rules.mentioned? && notification.reason.mention?
       return true if notification.authored?
       return false unless notification.subject.should_check_author?
 
@@ -72,9 +72,6 @@ module Shoo
       authors
     end
 
-    private def notification_mentions_user?(notification : API::Notification, _user : String) : Bool
-      notification.reason == "mention"
-    end
 
     private def author_in_teams?(author : String, teams : Array(String), repo_full_name : String) : Bool
       return false if teams.empty?
