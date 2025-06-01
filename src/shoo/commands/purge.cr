@@ -85,7 +85,8 @@ module Shoo
       end
 
       private def fetch_notifications(client : API::Client) : Array(API::Notification)
-        client.notifications.list.or do |error|
+        # TODO: Handle pagination properly
+        client.notifications.list(per_page: 100).or do |error|
           puts "Error fetching notifications: #{error.message}"
           exit 1
         end

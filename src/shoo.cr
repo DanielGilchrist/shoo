@@ -57,4 +57,8 @@ module Shoo
   end
 end
 
+{% if flag?(:debug) %}
+  Shoo::Debug.setup
+{% end %}
+
 Shoo.main
