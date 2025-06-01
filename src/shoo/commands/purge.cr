@@ -20,7 +20,11 @@ module Shoo
         if @dry_run
           show_dry_run_details(notifications_to_purge)
         else
-          if confirm_purge(notifications_to_purge.size)
+          purge_count = notifications_to_purge.size
+
+          if purge_count.zero?
+            puts "No notifications to purge."
+          elsif confirm_purge(purge_count)
             perform_purge(notifications_to_purge, client)
           else
             puts "Purge cancelled."
