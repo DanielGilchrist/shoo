@@ -40,6 +40,20 @@ module Shoo
         get(type, path)
       end
 
+      def patch(type : T.class, path : String) : API::Result(T) forall T
+        {% unless T.class.has_method?("from_json") %}
+          {% raise "Type #{T} must include JSON::Serializable" %}
+        {% end %}
+
+        response = HTTP::Client.patch("#{BASE_URL}#{path}", headers: headers)
+        API::Result.new((response.success? ? T : GitHubError).from_json(response.body))
+      end
+
+      def delete(path : String) : Bool
+        response = HTTP::Client.delete("#{BASE_URL}#{path}", headers: headers)
+        response.success?
+      end
+
       private def headers
         HTTP::Headers{
           "Authorization"        => "Bearer #{@token}",

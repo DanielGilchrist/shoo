@@ -36,8 +36,6 @@ module Shoo
     end
 
     private def fetch_authors_concurrently(notifications : Array(API::Notification)) : Hash(String, String)
-      authors = {} of String => String
-
       urls_to_fetch = notifications.compact_map do |notification|
         next unless notification.subject.should_check_author?
         next if notification.authored?
@@ -45,33 +43,23 @@ module Shoo
         notification.subject.url
       end.uniq
 
-      channels = urls_to_fetch.map do |url|
-        channel = Channel(Tuple(String, String)).new
-
-        spawn do
-          author = case url
-                   when /\/pulls\/\d+$/
-                     @client.pull_requests.get(url).map_or("") { |pr| pr.user.login }
-                   when /\/issues\/\d+$/
-                     @client.issues.get(url).map_or("") { |issue| issue.user.login }
-                   else
-                     ""
-                   end
-
-          channel.send({url, author})
+      results = ConcurrentWorker.run(urls_to_fetch) do |url|
+        author = begin
+          case url
+          when /\/pulls\/\d+$/
+            @client.pull_requests.get(url).map_or("") { |pr| pr.user.login }
+          when /\/issues\/\d+$/
+            @client.issues.get(url).map_or("") { |issue| issue.user.login }
+          else
+            ""
+          end
         end
 
-        channel
+        {url, author}
       end
 
-      channels.each do |channel|
-        url, author = channel.receive
-        authors[url] = author
-      end
-
-      authors
+      results.to_h
     end
-
 
     private def author_in_teams?(author : String, teams : Array(String), repo_full_name : String) : Bool
       return false if teams.empty?

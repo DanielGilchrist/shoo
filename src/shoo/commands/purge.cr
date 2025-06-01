@@ -8,8 +8,8 @@ module Shoo
         client = API::Client.new(token)
 
         notifications = fetch_notifications(client)
-        filter_result = filter_notifications(notifications, client)
-        notifications_to_keep, notifications_to_purge = filter_result
+        notification_filter = NotificationFilter.new(@config, client)
+        notifications_to_keep, notifications_to_purge = notification_filter.filter(notifications)
 
         if @verbose
           show_summary(notifications, notifications_to_keep, notifications_to_purge)
@@ -20,7 +20,11 @@ module Shoo
         if @dry_run
           show_dry_run_details(notifications_to_purge)
         else
-          perform_purge(notifications_to_purge)
+          if confirm_purge(notifications_to_purge.size)
+            perform_purge(notifications_to_purge, client)
+          else
+            puts "Purge cancelled."
+          end
         end
       end
 
@@ -57,9 +61,27 @@ module Shoo
         puts "#{"No changes will be made.".colorize.green} Remove `--dry-run` to actually purge."
       end
 
-      private def perform_purge(notifications_to_purge : Array(API::Notification)) : Nil
+      private def confirm_purge(count : Int32) : Bool
+        puts "\n⚠️  You are about to purge #{count.to_s.colorize.red.bold} notifications."
+        print "Are you sure? (y/N): "
+        response = gets.try(&.strip.downcase)
+        response == "y" || response == "yes"
+      end
+
+      private def perform_purge(notifications_to_purge : Array(API::Notification), client : API::Client) : Nil
         puts "\n🧹 #{"Purging".colorize.red.bold} #{notifications_to_purge.size} notifications..."
-        # TODO: Implement purge
+
+        results = ConcurrentWorker.run(notifications_to_purge) do |notification|
+          client.notifications.mark_as_done(notification.id)
+        end
+
+        success_count = results.count(true)
+        error_count = results.count(false)
+
+        puts "\n✅ Successfully purged #{success_count.to_s.colorize.green.bold} notifications"
+        if error_count > 0
+          puts "❌ Failed to purge #{error_count.to_s.colorize.red.bold} notifications"
+        end
       end
 
       private def fetch_notifications(client : API::Client) : Array(API::Notification)
@@ -67,11 +89,6 @@ module Shoo
           puts "Error fetching notifications: #{error.message}"
           exit 1
         end
-      end
-
-      private def filter_notifications(notifications : Array(API::Notification), client : API::Client) : {Array(API::Notification), Array(API::Notification)}
-        notification_filter = NotificationFilter.new(@config, client)
-        notification_filter.filter(notifications)
       end
 
       private def show_keeping_list(notifications : Array(API::Notification)) : Nil
