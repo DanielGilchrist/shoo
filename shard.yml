@@ -8,6 +8,6 @@ targets:
   shoo:
     main: src/shoo.cr
 
-crystal: '>= 1.16.1'
+crystal: 1.16.3
 
 license: MIT

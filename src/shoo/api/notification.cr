@@ -8,16 +8,37 @@ module Shoo
       PullRequest
     end
 
+    enum NotificationReason
+      Author
+      CiActivity
+      Comment
+      Mention
+      ReviewRequested
+    end
+
     struct Notification
       include JSON::Serializable
 
+      module NotificationReasonConverter
+        def self.from_json(value : JSON::PullParser) : NotificationReason
+          NotificationReason.parse(value.read_string)
+        end
+
+        def self.to_json(value : NotificationReason, json : JSON::Builder)
+          json.string(value.to_s)
+        end
+      end
+
       property id : String
-      property reason : String
+
+      @[JSON::Field(converter: Shoo::API::Notification::NotificationReasonConverter)]
+      property reason : NotificationReason
+
       property subject : Subject
       property repository : Repository
 
       def authored?
-        reason == "author"
+        reason.author?
       end
     end
 
