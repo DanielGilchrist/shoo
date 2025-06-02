@@ -14,6 +14,7 @@ module Shoo
       Comment
       Mention
       ReviewRequested
+      StateChange
     end
 
     struct Notification
