@@ -14,11 +14,11 @@ module Shoo
       end
     end
 
-    property message : String
-    property documentation_url : String
+    getter message : String
+    getter documentation_url : String
 
     @[JSON::Field(converter: Shoo::GitHubError::StringToUInt16Converter)]
-    property status : UInt16
+    getter status : UInt16
 
     def initialize(@message : String, @documentation_url : String, @status : UInt16)
     end

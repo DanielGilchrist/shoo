@@ -30,13 +30,13 @@ module Shoo
         end
       end
 
-      property id : String
+      getter id : String
 
       @[JSON::Field(converter: Shoo::API::Notification::NotificationReasonConverter)]
-      property reason : NotificationReason
+      getter reason : NotificationReason
 
-      property subject : Subject
-      property repository : Repository
+      getter subject : Subject
+      getter repository : Repository
 
       def authored?
         reason.author?
@@ -56,12 +56,12 @@ module Shoo
         end
       end
 
-      property title : String
+      getter title : String
 
       @[JSON::Field(converter: Shoo::API::Subject::SubjectTypeConverter)]
-      property type : SubjectType
+      getter type : SubjectType
 
-      property url : String?
+      getter url : String?
 
       def should_check_author? : Bool
         type.pull_request? || type.issue?
@@ -71,7 +71,7 @@ module Shoo
     struct Repository
       include JSON::Serializable
 
-      property full_name : String
+      getter full_name : String
     end
   end
 end

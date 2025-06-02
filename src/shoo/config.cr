@@ -6,8 +6,8 @@ module Shoo
 
     CONFIG_DIR = "#{Path.home}/.config/shoo/config.yml"
 
-    property notifications : NotificationConfig = NotificationConfig.new
-    property github : GithubConfig = GithubConfig.new
+    getter notifications : NotificationConfig = NotificationConfig.new
+    getter github : GithubConfig = GithubConfig.new
 
     def self.load(path : String = CONFIG_DIR) : Config
       if File.exists?(path)
@@ -24,7 +24,7 @@ module Shoo
   class NotificationConfig
     include YAML::Serializable
 
-    property purge : PurgeConfig = PurgeConfig.new
+    getter purge : PurgeConfig = PurgeConfig.new
 
     def initialize
     end
@@ -33,8 +33,8 @@ module Shoo
   class PurgeConfig
     include YAML::Serializable
 
-    property global : PurgeRules = PurgeRules.new
-    property repos : Hash(String, PurgeRules) = Hash(String, PurgeRules).new
+    getter global : PurgeRules = PurgeRules.new
+    getter repos : Hash(String, PurgeRules) = Hash(String, PurgeRules).new
 
     def initialize
     end
@@ -43,7 +43,7 @@ module Shoo
   class PurgeRules
     include YAML::Serializable
 
-    property keep_if : KeepRules = KeepRules.new
+    getter keep_if : KeepRules = KeepRules.new
 
     def initialize
     end
@@ -52,11 +52,11 @@ module Shoo
   class KeepRules
     include YAML::Serializable
 
-    property author_in_teams : Array(String) = [] of String
-    property authors : Array(String) = [] of String
-    property? mentioned : Bool = false
-    property labels : Array(String) = [] of String
-    property pr_states : Array(String) = [] of String
+    getter author_in_teams : Array(String) = [] of String
+    getter authors : Array(String) = [] of String
+    getter? mentioned : Bool = false
+    getter labels : Array(String) = [] of String
+    getter pr_states : Array(String) = [] of String
 
     def initialize
     end
@@ -65,7 +65,7 @@ module Shoo
   class GithubConfig
     include YAML::Serializable
 
-    property token : String?
+    getter token : String?
 
     def initialize
     end

@@ -5,23 +5,23 @@ module Shoo
     struct PullRequest
       include JSON::Serializable
 
-      property user : User
-      property title : String
-      property state : String
+      getter user : User
+      getter title : String
+      getter state : String
     end
 
     struct Issue
       include JSON::Serializable
 
-      property user : User
-      property title : String
-      property state : String
+      getter user : User
+      getter title : String
+      getter state : String
     end
 
     struct User
       include JSON::Serializable
 
-      property login : String
+      getter login : String
     end
   end
 end
