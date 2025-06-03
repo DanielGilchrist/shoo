@@ -8,12 +8,12 @@ module Shoo
 
   VERSION = "0.1.0"
 
-  def main
+  def main(args : Array(String))
     command : (Commands::Command.class)? = nil
     dry_run = false
     verbose = false
 
-    OptionParser.new do |parser|
+    OptionParser.parse(args) do |parser|
       parser.banner = "Usage: shoo [subcommand] [arguments]"
 
       parser.on("notification", "Commands for notifications") do
@@ -33,10 +33,13 @@ module Shoo
       end
 
       define_help(parser)
-    end.parse
-
-    if cmd = command
-      execute_command!(cmd, dry_run, verbose)
+    end.tap do |parser|
+      if cmd = command
+        execute_command!(cmd, dry_run, verbose)
+      else
+        puts "#{"Invalid command: ".colorize.red}\"#{args.join(" ").colorize.bold}\""
+        help(parser)
+      end
     end
   end
 
@@ -57,8 +60,10 @@ module Shoo
   end
 end
 
-{% if flag?(:debug) %}
-  Shoo::Debug.setup
-{% end %}
+{% unless flag?(:test) %}
+  {% if flag?(:debug) %}
+    Shoo::Debug.setup
+  {% end %}
 
-Shoo.main
+  Shoo.main(args: ARGV)
+{% end %}
