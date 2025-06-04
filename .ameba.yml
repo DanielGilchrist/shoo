@@ -1,0 +1,6 @@
+Lint/DebugCalls:
+  Excluded:
+    - src/shoo/debug.cr
+
+Documentation/DocumentationAdmonition:
+  Enabled: false

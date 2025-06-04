@@ -4,7 +4,7 @@ module Shoo
       @storage = {} of String => T
     end
 
-    def fetch(key : String, &block : -> T) : T
+    def fetch(key : String, & : -> T) : T
       if @storage.has_key?(key)
         @storage[key]
       else

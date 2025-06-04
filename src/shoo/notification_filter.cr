@@ -41,19 +41,18 @@ module Shoo
         next if notification.authored?
 
         notification.subject.url
-      end.uniq
+      end.uniq!
 
       results = ConcurrentWorker.run(urls_to_fetch) do |url|
         author = begin
           case url
           when /\/pulls\/\d+$/
-            @client.pull_requests.get(url).map_or("") { |pr| pr.user.login }
+            @client.pull_requests
           when /\/issues\/\d+$/
-            @client.issues.get(url).map_or("") { |issue| issue.user.login }
-          else
-            ""
+            @client.issues
           end
-        end
+        end.try(&.get(url).map_or(nil, &.user.login))
+        next if author.nil?
 
         {url, author}
       end

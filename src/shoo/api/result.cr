@@ -24,7 +24,7 @@ module Shoo
         end
       end
 
-      def map_or(default : U, &block : T -> U) : U forall U
+      def map_or(default : U, & : T -> U) : U forall U
         case value = @value
         in T
           yield(value)

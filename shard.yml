@@ -8,6 +8,10 @@ targets:
   shoo:
     main: src/shoo.cr
 
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+
 crystal: 1.16.3
 
 license: MIT
