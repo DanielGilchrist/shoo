@@ -54,8 +54,9 @@ module Shoo
         end.try(&.get(url).map_or(nil, &.user.login))
         next if author.nil?
 
-        {url, author}
-      end
+        # TODO: Figure out why this cast is necessary (Crystal thinks `NoReturn`)
+        {url, author.as(String)}
+      end.compact
 
       results.to_h
     end

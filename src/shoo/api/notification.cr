@@ -15,6 +15,7 @@ module Shoo
       Mention
       ReviewRequested
       StateChange
+      TeamMention
     end
 
     struct Notification
