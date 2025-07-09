@@ -9,6 +9,7 @@ module Shoo
     end
 
     enum NotificationReason
+      Assign
       Author
       CiActivity
       Comment
