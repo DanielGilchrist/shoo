@@ -7,6 +7,7 @@ module Shoo
       Comment
       Mention
       ReviewRequested
+      SecurityAlert
       StateChange
       TeamMention
     end
