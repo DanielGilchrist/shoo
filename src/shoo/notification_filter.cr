@@ -26,7 +26,7 @@ module Shoo
       author = authors[url]?
       return false if !author || author.empty?
       return true if keep_rules.authors.includes?(author)
-      return true if author_in_teams?(author, keep_rules.author_in_teams, notification.repository.full_name)
+      return true if author_in_teams?(author, keep_rules.author_in_teams, notification.repository)
 
       false
     end
@@ -60,17 +60,17 @@ module Shoo
       results.to_h
     end
 
-    private def author_in_teams?(author : String, teams : Array(String), repo_full_name : String) : Bool
+    private def author_in_teams?(author : String, teams : Array(String), repository : API::Repository) : Bool
       return false if teams.empty?
 
-      org = repo_full_name.split("/").first
+      organisation_name = repository.organisation_name
 
       teams.any? do |team_name|
         team_slug = team_name.downcase.gsub(" ", "-")
-        cache_key = "#{org}/#{team_slug}"
+        cache_key = "#{organisation_name}/#{team_slug}"
 
         members = @team_cache.fetch(cache_key) do
-          @client.teams.members(org, team_slug).or_default
+          @client.teams.members(organisation_name, team_slug).or_default
         end
 
         members.any? { |member| member.login == author }
