@@ -19,8 +19,5 @@ module Shoo
 
     @[JSON::Field(converter: Shoo::GitHubError::StringToUInt16Converter)]
     getter status : UInt16
-
-    def initialize(@message : String, @documentation_url : String, @status : UInt16)
-    end
   end
 end
