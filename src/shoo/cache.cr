@@ -1,12 +1,12 @@
 module Shoo
   # TODO: This should probably be an LRU cache
   # Currently the cache is unbounded which although unlikely could result in memory issues
-  struct Cache(T)
+  struct Cache(K, V)
     def initialize
-      @cache = {} of String => T
+      @cache = {} of K => V
     end
 
-    def fetch(key : String, & : -> T) : T
+    def fetch(key : K, & : -> V) : V
       @cache[key] ||= yield
     end
   end

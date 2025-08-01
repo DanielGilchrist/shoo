@@ -1,7 +1,7 @@
 module Shoo
   struct NotificationFilter
     def initialize(@config : Config, @client : API::Client)
-      @team_cache = Cache(Array(API::User)).new
+      @team_cache = Cache(String, Array(API::User)).new
     end
 
     def filter(notifications : Array(API::Notification)) : {Array(API::Notification), Array(API::Notification)}
