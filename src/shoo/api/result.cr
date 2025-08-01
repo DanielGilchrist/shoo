@@ -3,6 +3,10 @@ module Shoo
     class Result(T)
       alias E = GitHubError
 
+      def self.from(response) : self
+        new((response.success? ? T : E).from_json(response.body))
+      end
+
       def initialize(@value : T | E)
       end
 

@@ -34,7 +34,7 @@ module Shoo
         {% end %}
 
         response = HTTP::Client.get(build_uri(path, query), headers: headers)
-        API::Result.new((response.success? ? T : GitHubError).from_json(response.body))
+        API::Result(T).from(response)
       end
 
       def get_from_url(type : T.class, url : String) : API::Result(T) forall T
@@ -48,7 +48,7 @@ module Shoo
         {% end %}
 
         response = HTTP::Client.patch("#{BASE_URL}#{path}", headers: headers)
-        API::Result.new((response.success? ? T : GitHubError).from_json(response.body))
+        API::Result(T).from(response)
       end
 
       def delete(path : String) : Bool
