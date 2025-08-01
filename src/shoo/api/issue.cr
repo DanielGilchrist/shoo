@@ -2,7 +2,7 @@ require "json"
 
 module Shoo
   module API
-    struct PullRequest
+    struct Issue
       include JSON::Serializable
 
       getter user : User
