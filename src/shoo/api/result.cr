@@ -6,6 +6,15 @@ module Shoo
       def initialize(@value : T | E)
       end
 
+      def ok? : T?
+        case value = @value
+        in T
+          value
+        in E
+          nil
+        end
+      end
+
       def or(& : E -> U) : T | U forall U
         case value = @value
         in T
@@ -21,15 +30,6 @@ module Shoo
           value
         in E
           T.new
-        end
-      end
-
-      def map_or(default : U, & : T -> U) : U forall U
-        case value = @value
-        in T
-          yield(value)
-        in E
-          default
         end
       end
     end

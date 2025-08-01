@@ -51,11 +51,10 @@ module Shoo
           when /\/issues\/\d+$/
             @client.issues
           end
-        end.try(&.get(url).map_or(nil, &.user.login))
+        end.try(&.get(url).ok?.try(&.user.login))
         next if author.nil?
 
-        # TODO: Figure out why this cast is necessary (Crystal thinks `NoReturn`)
-        {url, author.as(String)}
+        {url, author}
       end.compact
 
       results.to_h
