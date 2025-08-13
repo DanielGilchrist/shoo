@@ -9,38 +9,60 @@ module Shoo
   VERSION = "0.1.0"
 
   def main(args : Array(String))
-    command : (Commands::Command.class)? = nil
-    dry_run = false
-    verbose = false
+    options = parse_options!(args)
 
-    OptionParser.parse(args) do |parser|
+    if command = options.command
+      execute_command!(command, options.dry_run, options.verbose)
+    else
+      puts "#{"Invalid command: ".colorize.red}\"#{args.join(" ").colorize.bold}\""
+      help(options.parser)
+    end
+  end
+
+  def parse_options!(args : Array(String)) : Options
+    options = Options.new
+
+    options.parser = OptionParser.parse(args) do |parser|
       parser.banner = "Usage: shoo [subcommand] [arguments]"
 
       parser.on("notification", "Commands for notifications") do
         parser.on("purge", "Purge unwanted notifications") do
-          command = Commands::Purge
+          options.command = Commands::Purge
         end
 
         parser.on("--dry-run", "Show what would be purged without actually purging") do
-          dry_run = true
+          options.dry_run = true
         end
 
         parser.on("--verbose", "Show detailed output") do
-          verbose = true
+          options.verbose = true
         end
 
         define_help(parser)
       end
 
-      define_help(parser)
-    end.tap do |parser|
-      if cmd = command
-        execute_command!(cmd, dry_run, verbose)
-      else
-        puts "#{"Invalid command: ".colorize.red}\"#{args.join(" ").colorize.bold}\""
-        help(parser)
+      parser.invalid_option do |option|
+        print_and_exit!("Invalid option '#{option}'") do
+          help(parser)
+        end
       end
+
+      define_help(parser)
     end
+
+    options
+  rescue e : OptionParser::InvalidOption
+    print_and_exit!(e.message || "Something went wrong")
+  end
+
+  private def print_and_exit!(message : String, &) : NoReturn
+    puts message
+    yield
+    exit(0)
+  end
+
+  private def print_and_exit!(message : String) : NoReturn
+    print_and_exit!(message) { }
   end
 
   # TODO: Make this more generic
@@ -57,6 +79,32 @@ module Shoo
   private def help(parser : OptionParser)
     puts parser
     exit
+  end
+
+  private struct Options
+    class MissingParser < Exception
+      def initialize
+        super("parser should not be `nil`!")
+      end
+    end
+
+    def initialize(
+      @dry_run = false,
+      @verbose = false,
+      @command : (Commands::Command.class)? = nil,
+      @parser : OptionParser? = nil
+    )
+    end
+
+    property dry_run : Bool
+    property verbose : Bool
+    property command : (Commands::Command.class)?
+
+    setter parser : OptionParser?
+
+    def parser : OptionParser
+      @parser || raise(MissingParser.new)
+    end
   end
 end
 
