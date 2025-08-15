@@ -5,6 +5,7 @@ module Shoo
       Author
       CiActivity
       Comment
+      Manual
       Mention
       ReviewRequested
       SecurityAlert
