@@ -25,6 +25,7 @@ notifications:
   purge:
     # Global rules (apply to all repos unless overridden)
     global:
+      unsubscribe: true # whether to unsubscribe from the notification so it never doesn't come back, default: false
       keep_if:
         author_in_teams: ["core-team", "security-team"]
         authors: ["DanielGilchrist", "trusted-maintainer"]
@@ -51,6 +52,7 @@ Additionally, it will keep notifications from PRs/issues where:
 - The author is in your `authors` list
 - The author is a member of teams listed in `author_in_teams`
 - You were mentioned and `mentioned: true` is set
+- You have manually subscribed to the notification
 
 All other notifications (like CI activity, comments from irrelevant users) will be marked for purging.
 
