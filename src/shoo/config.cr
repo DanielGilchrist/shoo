@@ -19,6 +19,10 @@ module Shoo
 
     def initialize
     end
+
+    def rules_for(notification : API::Notification) : PurgeRules
+      notifications.purge.repos[notification.repository_name]? || notifications.purge.global
+    end
   end
 
   class NotificationConfig
@@ -44,6 +48,7 @@ module Shoo
     include YAML::Serializable
 
     getter keep_if : KeepRules = KeepRules.new
+    getter? unsubscribe : Bool = false
 
     def initialize
     end

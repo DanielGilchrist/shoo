@@ -75,8 +75,15 @@ module Shoo
       private def perform_purge(notifications_to_purge : Array(API::Notification), client : API::Client) : Nil
         puts "\n🧹 #{"Purging".colorize.red.bold} #{notifications_to_purge.size} notifications..."
 
+        notifications = client.notifications
         results = ConcurrentWorker.run(notifications_to_purge) do |notification|
-          client.notifications.mark_as_done(notification.id)
+          rules = @config.rules_for(notification)
+
+          if rules.unsubscribe?
+            notifications.unsubscribe(notification.id)
+          end
+
+          notifications.mark_as_done(notification.id)
         end
 
         success_count = results.count(true)

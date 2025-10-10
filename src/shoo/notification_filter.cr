@@ -15,7 +15,7 @@ module Shoo
     private def should_keep?(notification : API::Notification, authors : Hash(String, String)) : Bool
       return true if notification.always_keep?
 
-      rules = rules_for_repo(notification.repository.full_name)
+      rules = @config.rules_for(notification)
       keep_rules = rules.keep_if
 
       return true if keep_rules.mentioned? && notification.reason.mention?
@@ -30,10 +30,6 @@ module Shoo
       return true if author_in_teams?(author, keep_rules.author_in_teams, notification.repository)
 
       false
-    end
-
-    private def rules_for_repo(repo_name : String) : PurgeRules
-      @config.notifications.purge.repos[repo_name]? || @config.notifications.purge.global
     end
 
     private def fetch_authors_concurrently(notifications : Array(API::Notification)) : Hash(String, String)

@@ -24,6 +24,10 @@ module Shoo
       def always_keep? : Bool
         authored? || subscribed?
       end
+
+      def repository_name : String
+        repository.full_name
+      end
     end
   end
 end
