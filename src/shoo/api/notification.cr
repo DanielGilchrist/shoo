@@ -13,8 +13,16 @@ module Shoo
       getter subject : Subject
       getter repository : Repository
 
-      def authored?
+      def authored? : Bool
         reason.author?
+      end
+
+      def subscribed? : Bool
+        reason.subscribed?
+      end
+
+      def always_keep? : Bool
+        authored? || subscribed?
       end
     end
   end
