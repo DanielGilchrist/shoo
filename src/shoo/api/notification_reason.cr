@@ -10,6 +10,7 @@ module Shoo
       ReviewRequested
       SecurityAlert
       StateChange
+      Subscribed
       TeamMention
     end
   end
