@@ -92,7 +92,7 @@ module Shoo
       @dry_run = false,
       @verbose = false,
       @command : (Commands::Command.class)? = nil,
-      @parser : OptionParser? = nil
+      @parser : OptionParser? = nil,
     )
     end
 
