@@ -13,11 +13,12 @@ module Shoo
     end
 
     private def should_keep?(notification : API::Notification, authors : Hash(String, String)) : Bool
+      return true if notification.always_keep?
+
       rules = rules_for_repo(notification.repository.full_name)
       keep_rules = rules.keep_if
 
       return true if keep_rules.mentioned? && notification.reason.mention?
-      return true if notification.authored?
       return false unless notification.subject.should_check_author?
 
       url = notification.subject.url
