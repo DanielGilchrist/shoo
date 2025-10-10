@@ -8,10 +8,6 @@ module Shoo
       def self.from_json(value : JSON::PullParser) : UInt16
         value.read_string.to_u16
       end
-
-      def self.to_json(value : UInt16, json : JSON::Builder)
-        json.string(value.to_s)
-      end
     end
 
     getter message : String

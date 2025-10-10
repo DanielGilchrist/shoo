@@ -38,11 +38,6 @@ module Shoo
         get(type, path)
       end
 
-      def patch(type : T.class, path : String) : API::Result(T) forall T
-        response = HTTP::Client.patch("#{BASE_URL}#{path}", headers: headers)
-        API::Result(T).from(response)
-      end
-
       def delete(path : String) : Bool
         response = HTTP::Client.delete("#{BASE_URL}#{path}", headers: headers)
         response.success?
