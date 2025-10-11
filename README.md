@@ -19,7 +19,7 @@ Create `~/.config/shoo/config.yml`:
 
 ```yaml
 github:
-  token: "your_github_token_here"  # Optional, can use SHOO_GITHUB_TOKEN env variable instead
+  token: "your_github_token_here"  # Optional, can provide a custom ENV variable with your token or just set SHOO_GITHUB_TOKEN
 
 notifications:
   purge:
