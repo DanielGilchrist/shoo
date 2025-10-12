@@ -1,7 +1,7 @@
 module Shoo
   struct NotificationFilter
     def initialize(@config : Config, @client : API::Client)
-      @team_cache = Cache(String, Array(API::User)).new
+      @team_cache = Cache(Array(API::User)).new
     end
 
     def filter(notifications : Array(API::Notification)) : {Array(API::Notification), Array(API::Notification)}
@@ -64,9 +64,7 @@ module Shoo
 
       teams.any? do |team_name|
         team_slug = team_name.downcase.gsub(" ", "-")
-        cache_key = "#{organisation_name}/#{team_slug}"
-
-        members = @team_cache.fetch(cache_key) do
+        members = @team_cache.fetch(organisation_name, team_slug) do
           @client.teams.members(organisation_name, team_slug).or_default
         end
 
