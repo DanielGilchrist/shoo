@@ -33,28 +33,34 @@ module Shoo
     end
 
     private def fetch_authors_concurrently(notifications : Array(API::Notification)) : Hash(String, String)
-      urls_to_fetch = notifications.compact_map do |notification|
-        next unless notification.subject.should_check_author?
-        next if notification.authored?
+      notifications_to_fetch = notifications.select do |notification|
+        notification.subject.should_check_author? || !notification.authored?
+      end
 
-        notification.subject.url
-      end.uniq!
+      results = ConcurrentWorker.run(notifications_to_fetch) do |notification|
+        subject = notification.subject
+        url = subject.url
+        next unless url
 
-      results = ConcurrentWorker.run(urls_to_fetch) do |url|
-        author = begin
-          case url
-          when /\/pulls\/\d+$/
-            @client.pull_requests
-          when /\/issues\/\d+$/
-            @client.issues
-          end
-        end.try(&.get(url).ok?.try(&.user.login))
+        endpoint = endpoint_for(subject)
+        next if endpoint.nil?
+
+        author = endpoint.get(url).ok?.try(&.user.login)
         next if author.nil?
 
         {url, author}
       end.compact
 
       results.to_h
+    end
+
+    private def endpoint_for(subject : API::Subject) : (API::Client::Issues | API::Client::PullRequests)?
+      case subject.type
+      when .pull_request?
+        @client.pull_requests
+      when .issue?
+        @client.issues
+      end
     end
 
     private def author_in_teams?(author : String, teams : Array(String), repository : API::Repository) : Bool
