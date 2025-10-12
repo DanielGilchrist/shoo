@@ -5,6 +5,7 @@ module Shoo
       Discussion
       Issue
       PullRequest
+      Release
       RepositoryDependabotAlertsThread
     end
   end
