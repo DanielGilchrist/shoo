@@ -1,12 +1,12 @@
 module Shoo
   module API
-    class Client
+    struct Client
       struct PullRequests
-        def initialize(@client : Client)
+        def initialize(@request : Request)
         end
 
         def get(url : String) : API::Result(PullRequest)
-          @client.get_from_url(PullRequest, url)
+          @request.get_from_url(PullRequest, url)
         end
       end
     end

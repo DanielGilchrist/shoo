@@ -1,12 +1,12 @@
 module Shoo
   module API
-    class Client
+    struct Client
       struct Teams
-        def initialize(@client : Client)
+        def initialize(@request : Request)
         end
 
         def members(organisation_name : String, team_slug : String) : API::Result(Array(User))
-          @client.get(Array(User), "/orgs/#{organisation_name}/teams/#{team_slug}/members")
+          @request.get(Array(User), "/orgs/#{organisation_name}/teams/#{team_slug}/members")
         end
       end
     end
