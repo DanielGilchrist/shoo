@@ -45,7 +45,7 @@ module Shoo
         endpoint = endpoint_for(subject)
         next if endpoint.nil?
 
-        author = endpoint.get(url).ok?.try(&.user.login)
+        author = endpoint.get(url).map(&.user.login).or { nil }
         next if author.nil?
 
         {url, author}

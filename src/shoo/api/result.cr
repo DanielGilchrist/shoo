@@ -10,12 +10,12 @@ module Shoo
       def initialize(@value : T | E)
       end
 
-      def ok? : T?
+      def map(& : T -> U) : Result(U) forall U
         case value = @value
         in T
-          value
+          Result(U).new(yield(value))
         in E
-          nil
+          Result(U).new(value)
         end
       end
 
