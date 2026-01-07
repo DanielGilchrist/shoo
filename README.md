@@ -46,15 +46,17 @@ notifications:
 ## How it works
 
 Shoo will always keep notifications for:
+- PRs/issues you are subscribed to (`reason="subscribed"`)
 - PRs/issues you authored (`reason="author"`)
+- PRs/issues you've commented on (`reason="comment"`)
+- PRs/issues you've been assigned to (`reason="assign"`)
 
 Additionally, it will keep notifications from PRs/issues where:
 - The author is in your `authors` list
 - The author is a member of teams listed in `author_in_teams`
 - You were mentioned and `mentioned: true` is set
-- You have manually subscribed to the notification
 
-All other notifications (like CI activity, comments from irrelevant users) will be marked for purging.
+All other notifications will be marked for purging.
 
 ## Development
 
