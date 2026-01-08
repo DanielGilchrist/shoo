@@ -29,6 +29,10 @@ module Shoo
         reason.assign?
       end
 
+      def team_mentioned? : Bool
+        reason.team_mention?
+      end
+
       def always_keep? : Bool
         authored? || subscribed? || commented? || assigned?
       end

@@ -8,6 +8,10 @@ module Shoo
         @request = Request.new(token)
       end
 
+      def comments : Comments
+        Comments.new(@request)
+      end
+
       def notifications : Notifications
         Notifications.new(@request)
       end

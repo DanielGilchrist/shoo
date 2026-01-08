@@ -9,6 +9,8 @@ module Shoo
       getter title : String
       getter state : String
       getter requested_teams : Array(Team)
+      getter review_comments_url : String
+      getter comments_url : String
     end
   end
 end

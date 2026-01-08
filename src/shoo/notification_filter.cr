@@ -38,6 +38,16 @@ module Shoo
       requested_teams = subject.requested_teams
       return true if any_requested_teams?(requested_teams, keep_rules.requested_teams)
 
+      if notification.team_mentioned? && (mentioned_team_slugs = keep_rules.mentioned_teams) && mentioned_team_slugs.any?
+        comments = [subject.comments_url, subject.review_comments_url].flat_map do |url|
+          @client.comments.list(url).or_default
+        end
+
+        organisation_name = notification.repository.organisation_name
+
+        return true if any_mentioned_teams?(organisation_name, mentioned_team_slugs, comments)
+      end
+
       false
     end
 
@@ -88,6 +98,18 @@ module Shoo
       teams.any? do |team|
         team_slugs.any? { |team_slug| team_slug == team.slug }
       end
+    end
+
+    private def any_mentioned_teams?(organisation_name : String, mentioned_team_slugs : Array(String), comments : Array(API::Comment)) : Bool
+      mentioned_team_slugs.any? do |team_slug|
+        comments.any? do |comment|
+          contains_team_mention?(comment.body, organisation_name, team_slug)
+        end
+      end
+    end
+
+    private def contains_team_mention?(content : String, organisation_name : String, team_slug : String)
+      content.includes?("@#{organisation_name}/#{team_slug}")
     end
   end
 end
