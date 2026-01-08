@@ -6,17 +6,18 @@ module Shoo
       DEFAULT_TOKEN_ENV   = "SHOO_GITHUB_TOKEN"
       GITHUB_TOKEN_PREFIX = "ghp_"
 
-      getter token : String?
+      @[JSON::Field(key: "token")]
+      private getter config_token : String?
 
       def initialize
       end
 
-      def github_token : String?
+      def token : String?
         parse_token? || ENV[DEFAULT_TOKEN_ENV]?
       end
 
       private def parse_token? : String?
-        token = self.token
+        token = self.config_token
         return if token.nil?
         return token if token.starts_with?(GITHUB_TOKEN_PREFIX)
 

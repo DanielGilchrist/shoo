@@ -6,7 +6,7 @@ module Shoo
       abstract def execute
 
       private def retrieve_token!
-        token = @config.github.github_token
+        token = @config.github.token
 
         if token.nil? || token.blank?
           puts "GitHub token not provided!"
