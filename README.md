@@ -36,6 +36,7 @@ notifications:
         keep_if:
           author_in_teams: ["core-team"] # keep if the author is a member of one of these teams (in slug form)
           requested_teams: ["core-team"] # keep if one of these teams is requested for review (in slug form)
+          mentioned_teams: ["core-team"] # keep if one of these teams is mentioned (in slug form)
           mentioned: true
 
       "my-org/experimental-repo":
@@ -55,6 +56,7 @@ Additionally, it will keep notifications from PRs/issues where:
 - The author is in your `authors` list
 - The author is a member of teams listed in `author_in_teams`
 - A team requested for review is one of the teams listed in `requested_teams`
+- A team mentioned is one of the teams listed in `mentioned_teams`
 - You were mentioned and `mentioned: true` is set
 
 All other notifications will be marked for purging.

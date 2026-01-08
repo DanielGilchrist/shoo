@@ -25,6 +25,7 @@ module Shoo
         [
           validate_author_in_teams(keep_if_config),
           validate_requested_teams(keep_if_config),
+          validate_mentioned_teams(keep_if_config),
         ].flatten
       end
 
@@ -37,6 +38,12 @@ module Shoo
       private def validate_requested_teams(keep_if_config : KeepRules) : Array(Error)
         keep_if_config.requested_teams.compact_map do |team_slug|
           Error.new(slug_error_message(team_slug, "requested_teams")) if invalid_slug?(team_slug)
+        end
+      end
+
+      private def validate_mentioned_teams(keep_if_config : KeepRules) : Array(Error)
+        keep_if_config.mentioned_teams.compact_map do |team_slug|
+          Error.new(slug_error_message(team_slug, "mentioned_teams")) if invalid_slug?(team_slug)
         end
       end
 
