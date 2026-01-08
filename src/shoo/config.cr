@@ -9,7 +9,7 @@ module Shoo
     def self.load(path : String = CONFIG_DIR) : Config | Array(Error)
       return new unless File.exists?(path)
 
-      config = from_yaml(File.read(path))
+      config = File.open(path) { |file| from_yaml(file) }
       errors = Validator.run(config)
       return errors if errors.any?
 
