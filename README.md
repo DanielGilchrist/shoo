@@ -27,7 +27,6 @@ notifications:
     global:
       unsubscribe: true # whether to unsubscribe from the notification so it never doesn't come back, default: false
       keep_if:
-        author_in_teams: ["core-team", "security-team"]
         authors: ["DanielGilchrist", "trusted-maintainer"]
         mentioned: false
 
@@ -35,7 +34,8 @@ notifications:
     repos:
       "my-org/critical-repo":
         keep_if:
-          author_in_teams: ["core-team"]
+          author_in_teams: ["core-team"] # keep if the author is a member of one of these teams
+          requested_teams: ["core-team"] # keep if one of these teams is requested for review
           mentioned: true
 
       "my-org/experimental-repo":
@@ -54,6 +54,7 @@ Shoo will always keep notifications for:
 Additionally, it will keep notifications from PRs/issues where:
 - The author is in your `authors` list
 - The author is a member of teams listed in `author_in_teams`
+- A team requested for review is one of the teams listed in `requested_teams`
 - You were mentioned and `mentioned: true` is set
 
 All other notifications will be marked for purging.
