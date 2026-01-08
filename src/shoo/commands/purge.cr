@@ -77,7 +77,7 @@ module Shoo
 
         notifications = client.notifications
         results = ConcurrentWorker.run(notifications_to_purge) do |notification|
-          rules = @config.rules_for(notification)
+          rules = @config.purge_rules_for(notification)
 
           if rules.unsubscribe?
             notifications.unsubscribe(notification.id)

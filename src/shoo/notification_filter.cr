@@ -19,7 +19,7 @@ module Shoo
     private def should_keep?(notification : API::Notification, subjects_by_url : SubjectsByUrl) : Bool
       return true if notification.always_keep?
 
-      rules = @config.rules_for(notification)
+      rules = @config.purge_rules_for(notification)
       keep_rules = rules.keep_if
 
       return true if keep_rules.mentioned? && notification.reason.mention?
