@@ -8,6 +8,7 @@ module Shoo
       getter user : User
       getter title : String
       getter state : String
+      getter requested_teams : Array(Team)
     end
   end
 end

@@ -58,6 +58,7 @@ module Shoo
     include YAML::Serializable
 
     getter author_in_teams : Array(String) = [] of String
+    getter requested_teams : Array(String) = [] of String
     getter authors : Array(String) = [] of String
     getter? mentioned : Bool = false
     getter labels : Array(String) = [] of String
