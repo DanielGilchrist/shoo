@@ -6,18 +6,20 @@ module Shoo
 
     CONFIG_DIR = "#{Path.home}/.config/shoo/config.yml"
 
+    def self.load(path : String = CONFIG_DIR) : Config | Array(Error)
+      return new unless File.exists?(path)
+
+      config = from_yaml(File.read(path))
+      errors = Validator.run(config)
+      return errors if errors.any?
+
+      config
+    end
+
     getter notifications : NotificationConfig = NotificationConfig.new
     getter github : GithubConfig = GithubConfig.new
 
-    def self.load(path : String = CONFIG_DIR) : Config
-      if File.exists?(path)
-        Config.from_yaml(File.read(path))
-      else
-        Config.new
-      end
-    end
-
-    def initialize
+    private def initialize
     end
 
     def rules_for(notification : API::Notification) : PurgeRules

@@ -67,8 +67,12 @@ module Shoo
 
   # TODO: Make this more generic
   private def execute_command!(command : Commands::Command.class, dry_run : Bool = false, verbose : Bool = false)
-    config = Config.load
-    command.new(config, dry_run, verbose).execute
+    case config = Config.load
+    in Config
+      command.new(config, dry_run, verbose).execute
+    in Array(Config::Error)
+      puts "Error parsing config: \n#{config.map(&.message).join(" | ")}"
+    end
   end
 
   private def define_help(parser : OptionParser)

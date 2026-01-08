@@ -70,13 +70,12 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, teams : Array(String), repository : API::Repository) : Bool
-      return false if teams.empty?
+    private def author_in_teams?(author : String, team_slugs : Array(String), repository : API::Repository) : Bool
+      return false if team_slugs.empty?
 
       organisation_name = repository.organisation_name
 
-      teams.any? do |team_name|
-        team_slug = team_name.downcase.gsub(" ", "-")
+      team_slugs.any? do |team_slug|
         members = @team_cache.fetch(organisation_name, team_slug) do
           @client.teams.members(organisation_name, team_slug).or_default
         end
@@ -85,9 +84,9 @@ module Shoo
       end
     end
 
-    private def any_requested_teams?(teams : Array(API::Team), team_names : Array(String)) : Bool
+    private def any_requested_teams?(teams : Array(API::Team), team_slugs : Array(String)) : Bool
       teams.any? do |team|
-        team_names.any? { |team_name| team_name == team.name }
+        team_slugs.any? { |team_slug| team_slug == team.slug }
       end
     end
   end

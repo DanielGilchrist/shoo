@@ -5,7 +5,7 @@ module Shoo
     struct Team
       include JSON::Serializable
 
-      getter name : String
+      getter slug : String
     end
   end
 end

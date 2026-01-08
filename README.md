@@ -34,8 +34,8 @@ notifications:
     repos:
       "my-org/critical-repo":
         keep_if:
-          author_in_teams: ["core-team"] # keep if the author is a member of one of these teams
-          requested_teams: ["core-team"] # keep if one of these teams is requested for review
+          author_in_teams: ["core-team"] # keep if the author is a member of one of these teams (in slug form)
+          requested_teams: ["core-team"] # keep if one of these teams is requested for review (in slug form)
           mentioned: true
 
       "my-org/experimental-repo":
