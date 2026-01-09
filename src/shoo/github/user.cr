@@ -1,5 +1,3 @@
-require "json"
-
 module Shoo
   module GitHub
     struct User

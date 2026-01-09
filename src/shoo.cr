@@ -1,5 +1,8 @@
-require "option_parser"
 require "colorize"
+require "http/client"
+require "json"
+require "option_parser"
+require "yaml"
 
 require "./shoo/**"
 

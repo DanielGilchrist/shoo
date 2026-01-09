@@ -1,6 +1,3 @@
-require "http/client"
-require "json"
-
 module Shoo
   module GitHub
     struct Client

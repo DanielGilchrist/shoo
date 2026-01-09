@@ -1,5 +1,3 @@
-require "yaml"
-
 module Shoo
   class Config
     include YAML::Serializable
