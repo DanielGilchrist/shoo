@@ -8,8 +8,8 @@ module Shoo
         client = API::Client.new(token)
 
         notifications = fetch_notifications(client)
-        notification_filter = NotificationFilter.new(@config, client)
-        notifications_to_keep, notifications_to_purge = notification_filter.filter(notifications)
+        notification_filter = NotificationFilter.new(@config, client, notifications)
+        notifications_to_keep, notifications_to_purge = notification_filter.filter
 
         if @verbose
           show_summary(notifications, notifications_to_keep, notifications_to_purge)

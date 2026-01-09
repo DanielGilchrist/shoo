@@ -2,22 +2,26 @@ module Shoo
   struct NotificationFilter
     alias Subject = API::PullRequest | API::Issue
     alias SubjectsByUrl = Hash(String, Subject)
+    alias CommentsByUrl = Hash(String, Array(API::Comment))
     alias SubjectEndpoint = API::Client::Issues | API::Client::PullRequests
     alias KeepRules = Config::Purge::Rules::Keep
 
-    def initialize(@config : Config, @client : API::Client)
+    record SubjectAndCommentsUrl, subject_url : String, comments_url : String
+
+    @subjects_by_url : SubjectsByUrl? = nil
+    @comments_by_url : CommentsByUrl? = nil
+
+    def initialize(@config : Config, @client : API::Client, @notifications : Array(API::Notification))
       @team_cache = Cache(Array(API::User)).new
     end
 
-    def filter(notifications : Array(API::Notification)) : {Array(API::Notification), Array(API::Notification)}
-      subjects_by_url = fetch_subjects_by_url_concurrently(notifications)
-
-      notifications.partition do |notification|
-        should_keep?(notification, subjects_by_url)
+    def filter : {Array(API::Notification), Array(API::Notification)}
+      @notifications.partition do |notification|
+        should_keep?(notification)
       end
     end
 
-    private def should_keep?(notification : API::Notification, subjects_by_url : SubjectsByUrl) : Bool
+    private def should_keep?(notification : API::Notification) : Bool
       return true if notification.always_keep?
 
       rules = @config.purge_rules_for(notification)
@@ -34,30 +38,10 @@ module Shoo
 
       author = subject.user.login
       return true if author_in_teams?(author, notification, keep_rules)
-      return true if requested_teams?(subject, keep_rules)
+      return true if subject.is_a?(API::PullRequest) && requested_teams?(subject, keep_rules)
       return true if team_mentioned?(subject, notification, keep_rules)
 
       false
-    end
-
-    private def fetch_subjects_by_url_concurrently(notifications : Array(API::Notification)) : SubjectsByUrl
-      notifications_to_fetch = notifications.reject(&.always_keep?)
-
-      results = ConcurrentWorker.run(notifications_to_fetch) do |notification|
-        subject = notification.subject
-        url = subject.url
-        next unless url
-
-        endpoint = endpoint_for(subject)
-        next unless endpoint
-
-        subject_object = endpoint.get(url).or { nil }
-        next unless subject_object
-
-        {url, subject_object}
-      end.compact
-
-      results.to_h
     end
 
     private def endpoint_for(subject : API::Subject) : SubjectEndpoint?
@@ -84,8 +68,8 @@ module Shoo
       end
     end
 
-    private def requested_teams?(subject : Subject, keep_rules : KeepRules) : Bool
-      teams = subject.requested_teams
+    private def requested_teams?(pull_request : API::PullRequest, keep_rules : KeepRules) : Bool
+      teams = pull_request.requested_teams
       team_slugs = keep_rules.requested_teams
 
       teams.any? do |team|
@@ -100,11 +84,8 @@ module Shoo
       return false if mentioned_team_slugs.empty?
 
       organisation_name = notification.repository.organisation_name
-
-      # TODO: This should be extracted and fetched concurrently
-      comments = [subject.comments_url, subject.review_comments_url].flat_map do |comments_url|
-        @client.comments.list(comments_url).or_default
-      end
+      comments = comments_by_url[notification.subject.url]?
+      return false if comments.nil? || comments.empty?
 
       mentioned_team_slugs.any? do |team_slug|
         comments.any? do |comment|
@@ -115,6 +96,54 @@ module Shoo
 
     private def contains_team_mention?(content : String, organisation_name : String, team_slug : String)
       content.includes?("@#{organisation_name}/#{team_slug}")
+    end
+
+    private def comments_by_url : CommentsByUrl
+      @comments_by_url ||= fetch_comments_by_url_concurrently
+    end
+
+    private def subjects_by_url : SubjectsByUrl
+      @subjects_by_url ||= fetch_subjects_by_url_concurrently
+    end
+
+    private def fetch_comments_by_url_concurrently : CommentsByUrl
+      subject_and_comments_urls = subjects_by_url.flat_map do |url, subject|
+        [SubjectAndCommentsUrl.new(url, subject.comments_url)].tap do |result|
+          result << SubjectAndCommentsUrl.new(url, subject.review_comments_url) if subject.is_a?(API::PullRequest)
+        end
+      end
+
+      results = ConcurrentWorker.run(subject_and_comments_urls) do |urls|
+        subject_url = urls.subject_url
+        comments_url = urls.comments_url
+
+        comments = @client.comments.list(comments_url).or { nil }
+        next if comments.nil? || comments.empty?
+
+        {subject_url, comments}
+      end.compact
+
+      results.to_h
+    end
+
+    private def fetch_subjects_by_url_concurrently : SubjectsByUrl
+      notifications_to_fetch = @notifications.reject(&.always_keep?)
+
+      results = ConcurrentWorker.run(notifications_to_fetch) do |notification|
+        subject = notification.subject
+        url = subject.url
+        next unless url
+
+        endpoint = endpoint_for(subject)
+        next unless endpoint
+
+        subject_object = endpoint.get(url).or { nil }
+        next unless subject_object
+
+        {url, subject_object}
+      end.compact
+
+      results.to_h
     end
   end
 end
