@@ -21,6 +21,10 @@ module Shoo
         reason.subscribed?
       end
 
+      def manually_subscribed? : Bool
+        reason.manual?
+      end
+
       def commented? : Bool
         reason.comment?
       end
@@ -34,7 +38,7 @@ module Shoo
       end
 
       def always_keep? : Bool
-        authored? || subscribed? || commented? || assigned?
+        authored? || subscribed? || commented? || assigned? || manually_subscribed?
       end
 
       def repository_name : String

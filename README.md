@@ -48,6 +48,7 @@ notifications:
 
 Shoo will always keep notifications for:
 - PRs/issues you are subscribed to (`reason="subscribed"`)
+- PRs/issues you have manually subscribed to (`reason="manual"`)
 - PRs/issues you authored (`reason="author"`)
 - PRs/issues you've commented on (`reason="comment"`)
 - PRs/issues you've been assigned to (`reason="assign"`)
