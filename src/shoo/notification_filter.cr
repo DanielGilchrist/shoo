@@ -6,6 +6,8 @@ module Shoo
     alias SubjectEndpoint = API::Client::Issues | API::Client::PullRequests
     alias KeepRules = Config::Purge::Rules::Keep
 
+    record SubjectAndCommentsUrl, subject_url : String, comments_url : String
+
     @subjects_by_url : SubjectsByUrl? = nil
     @comments_by_url : CommentsByUrl? = nil
 
@@ -105,15 +107,15 @@ module Shoo
     end
 
     private def fetch_comments_by_url_concurrently : CommentsByUrl
-      comments_urls_and_subject_urls = subjects_by_url.flat_map do |url, subject|
-        [{subject_url: url, comments_url: subject.comments_url}].tap do |result|
-          result << {subject_url: url, comments_url: subject.review_comments_url} if subject.is_a?(API::PullRequest)
+      subject_and_comments_urls = subjects_by_url.flat_map do |url, subject|
+        [SubjectAndCommentsUrl.new(url, subject.comments_url)].tap do |result|
+          result << SubjectAndCommentsUrl.new(url, subject.review_comments_url) if subject.is_a?(API::PullRequest)
         end
       end
 
-      results = ConcurrentWorker.run(comments_urls_and_subject_urls) do |urls|
-        subject_url = urls[:subject_url]
-        comments_url = urls[:comments_url]
+      results = ConcurrentWorker.run(subject_and_comments_urls) do |urls|
+        subject_url = urls.subject_url
+        comments_url = urls.comments_url
 
         comments = @client.comments.list(comments_url).or { nil }
         next if comments.nil? || comments.empty?
