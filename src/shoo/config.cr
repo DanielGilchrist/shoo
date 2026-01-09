@@ -11,7 +11,7 @@ module Shoo
 
       config = File.open(path) { |file| from_yaml(file) }
       errors = Validator.run(config)
-      return errors if errors.any?
+      return errors unless errors.empty?
 
       config
     end

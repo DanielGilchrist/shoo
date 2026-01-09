@@ -12,7 +12,7 @@ module Shoo
     options = parse_options!(args)
 
     if command = options.command
-      execute_command!(command, options.dry_run, options.verbose)
+      execute_command!(command, options)
     else
       puts "#{"Invalid command: ".colorize.red}\"#{args.join(" ").colorize.bold}\""
       help(options.parser)
@@ -66,10 +66,10 @@ module Shoo
   end
 
   # TODO: Make this more generic
-  private def execute_command!(command : Commands::Command.class, dry_run : Bool = false, verbose : Bool = false)
+  private def execute_command!(command : Commands::Command.class, options : Options)
     case config = Config.load
     in Config
-      command.new(config, dry_run, verbose).execute
+      command.new(config, options.dry_run?, options.verbose?).execute
     in Array(Config::Error)
       puts "Error parsing config: \n#{config.map(&.message).join(" | ")}"
     end
@@ -100,8 +100,8 @@ module Shoo
     )
     end
 
-    property dry_run : Bool
-    property verbose : Bool
+    property? dry_run : Bool
+    property? verbose : Bool
     property command : (Commands::Command.class)?
 
     setter parser : OptionParser?

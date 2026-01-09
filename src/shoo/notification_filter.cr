@@ -3,6 +3,7 @@ module Shoo
     alias Subject = API::PullRequest | API::Issue
     alias SubjectsByUrl = Hash(String, Subject)
     alias SubjectEndpoint = API::Client::Issues | API::Client::PullRequests
+    alias KeepRules = Config::Purge::Rules::Keep
 
     def initialize(@config : Config, @client : API::Client)
       @team_cache = Cache(Array(API::User)).new
@@ -32,21 +33,9 @@ module Shoo
       return false unless subject
 
       author = subject.user.login
-      return true if keep_rules.authors.includes?(author)
-      return true if author_in_teams?(author, keep_rules.author_in_teams, notification.repository)
-
-      requested_teams = subject.requested_teams
-      return true if any_requested_teams?(requested_teams, keep_rules.requested_teams)
-
-      if notification.team_mentioned? && (mentioned_team_slugs = keep_rules.mentioned_teams) && mentioned_team_slugs.any?
-        comments = [subject.comments_url, subject.review_comments_url].flat_map do |url|
-          @client.comments.list(url).or_default
-        end
-
-        organisation_name = notification.repository.organisation_name
-
-        return true if any_mentioned_teams?(organisation_name, mentioned_team_slugs, comments)
-      end
+      return true if author_in_teams?(author, notification, keep_rules)
+      return true if requested_teams?(subject, keep_rules)
+      return true if team_mentioned?(subject, notification, keep_rules)
 
       false
     end
@@ -80,10 +69,11 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, team_slugs : Array(String), repository : API::Repository) : Bool
+    private def author_in_teams?(author : String, notification : API::Notification, keep_rules : KeepRules) : Bool
+      team_slugs = keep_rules.author_in_teams
       return false if team_slugs.empty?
 
-      organisation_name = repository.organisation_name
+      organisation_name = notification.repository.organisation_name
 
       team_slugs.any? do |team_slug|
         members = @team_cache.fetch(organisation_name, team_slug) do
@@ -94,13 +84,28 @@ module Shoo
       end
     end
 
-    private def any_requested_teams?(teams : Array(API::Team), team_slugs : Array(String)) : Bool
+    private def requested_teams?(subject : Subject, keep_rules : KeepRules) : Bool
+      teams = subject.requested_teams
+      team_slugs = keep_rules.requested_teams
+
       teams.any? do |team|
         team_slugs.any? { |team_slug| team_slug == team.slug }
       end
     end
 
-    private def any_mentioned_teams?(organisation_name : String, mentioned_team_slugs : Array(String), comments : Array(API::Comment)) : Bool
+    private def team_mentioned?(subject : Subject, notification : API::Notification, keep_rules : KeepRules) : Bool
+      return false unless notification.team_mentioned?
+
+      mentioned_team_slugs = keep_rules.mentioned_teams
+      return false if mentioned_team_slugs.empty?
+
+      organisation_name = notification.repository.organisation_name
+
+      # TODO: This should be extracted and fetched concurrently
+      comments = [subject.comments_url, subject.review_comments_url].flat_map do |comments_url|
+        @client.comments.list(comments_url).or_default
+      end
+
       mentioned_team_slugs.any? do |team_slug|
         comments.any? do |comment|
           contains_team_mention?(comment.body, organisation_name, team_slug)
