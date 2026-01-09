@@ -1,11 +1,11 @@
 module Shoo
-  module API
+  module GitHub
     struct Client
       struct Issues
         def initialize(@request : Request)
         end
 
-        def get(url : String) : API::Result(Issue)
+        def get(url : String) : Result(Issue)
           @request.get_from_url(Issue, url)
         end
       end

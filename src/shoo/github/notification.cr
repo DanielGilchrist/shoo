@@ -1,13 +1,13 @@
 require "json"
 
 module Shoo
-  module API
+  module GitHub
     struct Notification
       include JSON::Serializable
 
       getter id : String
 
-      @[JSON::Field(converter: Shoo::API::Converters::NotificationReason)]
+      @[JSON::Field(converter: Shoo::GitHub::Converters::NotificationReason)]
       getter reason : NotificationReason
 
       getter subject : Subject

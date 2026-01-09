@@ -1,5 +1,5 @@
 module Shoo
-  module API
+  module GitHub
     enum NotificationReason
       ApprovalRequested
       Assign

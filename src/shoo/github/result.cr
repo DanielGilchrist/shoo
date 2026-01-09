@@ -1,7 +1,7 @@
 module Shoo
-  module API
+  module GitHub
     class Result(T)
-      alias E = GitHubError
+      alias E = Error
 
       def self.from(response) : self
         new((response.success? ? T : E).from_json(response.body))

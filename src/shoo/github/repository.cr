@@ -1,5 +1,5 @@
 module Shoo
-  module API
+  module GitHub
     struct Repository
       include JSON::Serializable
 

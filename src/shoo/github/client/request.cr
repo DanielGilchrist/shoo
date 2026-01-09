@@ -1,5 +1,5 @@
 module Shoo
-  module API
+  module GitHub
     struct Client
       struct Request
         @headers : HTTP::Headers
@@ -14,12 +14,12 @@ module Shoo
           @headers = build_headers(token)
         end
 
-        def get(type : T.class, path : String, query : TBody = TBody.new) : API::Result(T) forall T
+        def get(type : T.class, path : String, query : TBody = TBody.new) : Result(T) forall T
           response = HTTP::Client.get(build_uri(path, query), headers: @headers)
-          API::Result(T).from(response)
+          Result(T).from(response)
         end
 
-        def get_from_url(type : T.class, url : String) : API::Result(T) forall T
+        def get_from_url(type : T.class, url : String) : Result(T) forall T
           path = url.sub(BASE_URL, "")
           get(type, path)
         end

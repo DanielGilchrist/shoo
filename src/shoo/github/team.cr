@@ -1,7 +1,7 @@
 require "json"
 
 module Shoo
-  module API
+  module GitHub
     struct Team
       include JSON::Serializable
 

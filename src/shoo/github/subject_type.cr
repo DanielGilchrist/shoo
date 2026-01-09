@@ -1,5 +1,5 @@
 module Shoo
-  module API
+  module GitHub
     enum SubjectType
       CheckSuite
       Discussion

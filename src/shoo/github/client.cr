@@ -2,7 +2,7 @@ require "http/client"
 require "json"
 
 module Shoo
-  module API
+  module GitHub
     struct Client
       def initialize(token : String)
         @request = Request.new(token)

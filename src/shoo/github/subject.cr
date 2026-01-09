@@ -1,11 +1,11 @@
 module Shoo
-  module API
+  module GitHub
     struct Subject
       include JSON::Serializable
 
       getter title : String
 
-      @[JSON::Field(converter: Shoo::API::Converters::SubjectType)]
+      @[JSON::Field(converter: Shoo::GitHub::Converters::SubjectType)]
       getter type : SubjectType
 
       getter url : String?

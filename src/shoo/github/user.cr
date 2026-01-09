@@ -1,11 +1,11 @@
 require "json"
 
 module Shoo
-  module API
-    struct Comment
+  module GitHub
+    struct User
       include JSON::Serializable
 
-      getter body : String
+      getter login : String
     end
   end
 end

@@ -5,7 +5,7 @@ module Shoo
         show_mode_banner
 
         token = retrieve_token!
-        client = API::Client.new(token)
+        client = GitHub::Client.new(token)
 
         notifications = fetch_notifications(client)
         notification_filter = NotificationFilter.new(@config, client, notifications)
@@ -41,18 +41,18 @@ module Shoo
         puts ""
       end
 
-      private def show_brief_summary(keeping : Array(API::Notification), removing : Array(API::Notification)) : Nil
+      private def show_brief_summary(keeping : Array(GitHub::Notification), removing : Array(GitHub::Notification)) : Nil
         puts "Keeping #{keeping.size.to_s.colorize.green.bold} notifications, removing #{removing.size.to_s.colorize.red.bold} notifications"
       end
 
-      private def show_summary(notifications : Array(API::Notification), keeping : Array(API::Notification), removing : Array(API::Notification)) : Nil
+      private def show_summary(notifications : Array(GitHub::Notification), keeping : Array(GitHub::Notification), removing : Array(GitHub::Notification)) : Nil
         puts "Total notifications: #{notifications.size}".colorize.white.bold
 
         show_keeping_list(keeping)
         show_removing_list(removing)
       end
 
-      private def show_dry_run_details(notifications_to_purge : Array(API::Notification)) : Nil
+      private def show_dry_run_details(notifications_to_purge : Array(GitHub::Notification)) : Nil
         puts "\n🔍 #{"[DRY RUN]".colorize.cyan.bold} The following #{notifications_to_purge.size} notifications would be purged:"
         puts "=" * 80
 
@@ -72,7 +72,7 @@ module Shoo
         response == "y" || response == "yes"
       end
 
-      private def perform_purge(notifications_to_purge : Array(API::Notification), client : API::Client) : Nil
+      private def perform_purge(notifications_to_purge : Array(GitHub::Notification), client : GitHub::Client) : Nil
         puts "\n🧹 #{"Purging".colorize.red.bold} #{notifications_to_purge.size} notifications..."
 
         notifications = client.notifications
@@ -95,34 +95,34 @@ module Shoo
         end
       end
 
-      private def fetch_notifications(client : API::Client) : Array(API::Notification)
+      private def fetch_notifications(client : GitHub::Client) : Array(GitHub::Notification)
         Paginator.paginate do |page, per_page|
           client.notifications.list(page, per_page).expect!("Error fetching notifications")
         end
       end
 
-      private def show_keeping_list(notifications : Array(API::Notification)) : Nil
+      private def show_keeping_list(notifications : Array(GitHub::Notification)) : Nil
         puts "\n--- KEEPING (#{notifications.size}) ---".colorize.green.bold
         notifications.each do |notification|
           puts "#{notification.reason.colorize.blue} | #{notification.subject.title}"
         end
       end
 
-      private def show_removing_list(notifications : Array(API::Notification)) : Nil
+      private def show_removing_list(notifications : Array(GitHub::Notification)) : Nil
         puts "\n--- REMOVING (#{notifications.size}) ---".colorize.red.bold
         notifications.each do |notification|
           puts "#{colourised_reason(notification.reason)} | #{notification.subject.title}"
         end
       end
 
-      private def show_notification_detail(notification : API::Notification, number : Int32) : Nil
+      private def show_notification_detail(notification : GitHub::Notification, number : Int32) : Nil
         puts "#{number.to_s.colorize.white.bold}. [#{colourised_reason(notification.reason)}] #{notification.subject.title}"
         puts "   #{"Repository:".colorize.light_gray} #{notification.repository.full_name.colorize.light_cyan}"
         puts "   #{"ID:".colorize.light_gray} #{notification.id.colorize.light_gray}"
         puts ""
       end
 
-      private def colourised_reason(reason : API::NotificationReason)
+      private def colourised_reason(reason : GitHub::NotificationReason)
         case reason
         when .ci_activity?
           reason.to_s.colorize.yellow

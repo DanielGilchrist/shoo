@@ -1,11 +1,11 @@
 module Shoo
-  module API
+  module GitHub
     struct Client
       struct PullRequests
         def initialize(@request : Request)
         end
 
-        def get(url : String) : API::Result(PullRequest)
+        def get(url : String) : Result(PullRequest)
           @request.get_from_url(PullRequest, url)
         end
       end

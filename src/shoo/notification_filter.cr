@@ -1,9 +1,9 @@
 module Shoo
   struct NotificationFilter
-    alias Subject = API::PullRequest | API::Issue
+    alias Subject = GitHub::PullRequest | GitHub::Issue
     alias SubjectsByUrl = Hash(String, Subject)
-    alias CommentsByUrl = Hash(String, Array(API::Comment))
-    alias SubjectEndpoint = API::Client::Issues | API::Client::PullRequests
+    alias CommentsByUrl = Hash(String, Array(GitHub::Comment))
+    alias SubjectEndpoint = GitHub::Client::Issues | GitHub::Client::PullRequests
     alias KeepRules = Config::Purge::Rules::Keep
 
     record SubjectAndCommentsUrl, subject_url : String, comments_url : String
@@ -11,17 +11,17 @@ module Shoo
     @subjects_by_url : SubjectsByUrl? = nil
     @comments_by_url : CommentsByUrl? = nil
 
-    def initialize(@config : Config, @client : API::Client, @notifications : Array(API::Notification))
-      @team_cache = Cache(Array(API::User)).new
+    def initialize(@config : Config, @client : GitHub::Client, @notifications : Array(GitHub::Notification))
+      @team_cache = Cache(Array(GitHub::User)).new
     end
 
-    def filter : {Array(API::Notification), Array(API::Notification)}
+    def filter : {Array(GitHub::Notification), Array(GitHub::Notification)}
       @notifications.partition do |notification|
         should_keep?(notification)
       end
     end
 
-    private def should_keep?(notification : API::Notification) : Bool
+    private def should_keep?(notification : GitHub::Notification) : Bool
       return true if notification.always_keep?
 
       rules = @config.purge_rules_for(notification)
@@ -38,13 +38,13 @@ module Shoo
 
       author = subject.user.login
       return true if author_in_teams?(author, notification, keep_rules)
-      return true if subject.is_a?(API::PullRequest) && requested_teams?(subject, keep_rules)
+      return true if subject.is_a?(GitHub::PullRequest) && requested_teams?(subject, keep_rules)
       return true if team_mentioned?(subject, notification, keep_rules)
 
       false
     end
 
-    private def endpoint_for(subject : API::Subject) : SubjectEndpoint?
+    private def endpoint_for(subject : GitHub::Subject) : SubjectEndpoint?
       case subject.type
       when .pull_request?
         @client.pull_requests
@@ -53,7 +53,7 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, notification : API::Notification, keep_rules : KeepRules) : Bool
+    private def author_in_teams?(author : String, notification : GitHub::Notification, keep_rules : KeepRules) : Bool
       team_slugs = keep_rules.author_in_teams
       return false if team_slugs.empty?
 
@@ -61,14 +61,14 @@ module Shoo
 
       team_slugs.any? do |team_slug|
         members = @team_cache.fetch(organisation_name, team_slug) do
-          @client.teams.members(organisation_name, team_slug).unwrap_or { Array(API::User).new }
+          @client.teams.members(organisation_name, team_slug).unwrap_or { Array(GitHub::User).new }
         end
 
         members.any? { |member| member.login == author }
       end
     end
 
-    private def requested_teams?(pull_request : API::PullRequest, keep_rules : KeepRules) : Bool
+    private def requested_teams?(pull_request : GitHub::PullRequest, keep_rules : KeepRules) : Bool
       teams = pull_request.requested_teams
       team_slugs = keep_rules.requested_teams
 
@@ -77,7 +77,7 @@ module Shoo
       end
     end
 
-    private def team_mentioned?(subject : Subject, notification : API::Notification, keep_rules : KeepRules) : Bool
+    private def team_mentioned?(subject : Subject, notification : GitHub::Notification, keep_rules : KeepRules) : Bool
       return false unless notification.team_mentioned?
 
       mentioned_team_slugs = keep_rules.mentioned_teams
@@ -109,7 +109,7 @@ module Shoo
     private def fetch_comments_by_url_concurrently : CommentsByUrl
       subject_and_comments_urls = subjects_by_url.flat_map do |url, subject|
         [SubjectAndCommentsUrl.new(url, subject.comments_url)].tap do |result|
-          result << SubjectAndCommentsUrl.new(url, subject.review_comments_url) if subject.is_a?(API::PullRequest)
+          result << SubjectAndCommentsUrl.new(url, subject.review_comments_url) if subject.is_a?(GitHub::PullRequest)
         end
       end
 

@@ -22,7 +22,7 @@ module Shoo
     private def initialize
     end
 
-    def purge_rules_for(notification : API::Notification) : Purge::Rules
+    def purge_rules_for(notification : GitHub::Notification) : Purge::Rules
       notifications.purge.repos[notification.repository_name]? || notifications.purge.global
     end
   end
