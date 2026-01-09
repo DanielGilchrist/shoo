@@ -36,7 +36,7 @@ module Shoo
 
       author = subject.user.login
       return true if author_in_teams?(author, notification, keep_rules)
-      return true if requested_teams?(subject, keep_rules)
+      return true if subject.is_a?(API::PullRequest) && requested_teams?(subject, keep_rules)
       return true if team_mentioned?(subject, notification, keep_rules)
 
       false
@@ -66,8 +66,8 @@ module Shoo
       end
     end
 
-    private def requested_teams?(subject : Subject, keep_rules : KeepRules) : Bool
-      teams = subject.requested_teams
+    private def requested_teams?(pull_request : API::PullRequest, keep_rules : KeepRules) : Bool
+      teams = pull_request.requested_teams
       team_slugs = keep_rules.requested_teams
 
       teams.any? do |team|
@@ -106,10 +106,9 @@ module Shoo
 
     private def fetch_comments_by_url_concurrently : CommentsByUrl
       comments_urls_and_subject_urls = subjects_by_url.flat_map do |url, subject|
-        [
-          {subject_url: url, comments_url: subject.comments_url},
-          {subject_url: url, comments_url: subject.review_comments_url},
-        ]
+        [{subject_url: url, comments_url: subject.comments_url}].tap do |result|
+          result << {subject_url: url, comments_url: subject.review_comments_url} if subject.is_a?(API::PullRequest)
+        end
       end
 
       results = ConcurrentWorker.run(comments_urls_and_subject_urls) do |urls|
