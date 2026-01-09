@@ -71,7 +71,7 @@ module Shoo
     in Config
       command.new(config, options.dry_run?, options.verbose?).execute
     in Array(Config::Error)
-      puts "Error parsing config: \n#{config.map(&.message).join(" | ")}"
+      puts "Error parsing config: \n#{config.map(&.message).join("\n")}"
     end
   end
 
