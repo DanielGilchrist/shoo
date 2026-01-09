@@ -97,10 +97,7 @@ module Shoo
 
       private def fetch_notifications(client : API::Client) : Array(API::Notification)
         Paginator.paginate do |page, per_page|
-          client.notifications.list(page, per_page).or do |error|
-            puts "Error fetching notifications: #{error.message}"
-            exit 1
-          end
+          client.notifications.list(page, per_page).expect!("Error fetching notifications")
         end
       end
 

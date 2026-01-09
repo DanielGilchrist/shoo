@@ -61,7 +61,7 @@ module Shoo
 
       team_slugs.any? do |team_slug|
         members = @team_cache.fetch(organisation_name, team_slug) do
-          @client.teams.members(organisation_name, team_slug).or_default
+          @client.teams.members(organisation_name, team_slug).unwrap_or { Array(API::User).new }
         end
 
         members.any? { |member| member.login == author }
@@ -117,7 +117,7 @@ module Shoo
         subject_url = urls.subject_url
         comments_url = urls.comments_url
 
-        comments = @client.comments.list(comments_url).or { nil }
+        comments = @client.comments.list(comments_url).ok?
         next if comments.nil? || comments.empty?
 
         {subject_url, comments}
@@ -137,7 +137,7 @@ module Shoo
         endpoint = endpoint_for(subject)
         next unless endpoint
 
-        subject_object = endpoint.get(url).or { nil }
+        subject_object = endpoint.get(url).ok?
         next unless subject_object
 
         {url, subject_object}

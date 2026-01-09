@@ -10,30 +10,30 @@ module Shoo
       def initialize(@value : T | E)
       end
 
-      def map(& : T -> U) : Result(U) forall U
-        case value = @value
-        in T
-          Result(U).new(yield(value))
-        in E
-          Result(U).new(value)
-        end
+      def ok? : T?
+        unwrap_or(nil)
       end
 
-      def or(& : E -> U) : T | U forall U
+      def unwrap_or(default : U) : T | U forall U
+        unwrap_or { default }
+      end
+
+      def unwrap_or(& : -> U) : T | U forall U
         case value = @value
         in T
           value
         in E
-          yield(value)
+          yield
         end
       end
 
-      def or_default : T
+      def expect!(message : String) : T
         case value = @value
         in T
           value
         in E
-          T.new
+          STDERR.puts "#{message}: #{value.message}"
+          exit 1
         end
       end
     end
