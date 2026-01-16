@@ -10,6 +10,13 @@ module Shoo
         notifications = fetch_notifications(client)
         notification_filter = NotificationFilter.new(@config, client, notifications)
         notifications_to_keep, notifications_to_purge = notification_filter.filter
+        purge_count = notifications_to_purge.size
+
+        if purge_count.zero?
+          return puts "No notifications to purge."
+        end
+
+        return perform_purge(notifications_to_purge, client) if @force
 
         if @verbose
           show_summary(notifications, notifications_to_keep, notifications_to_purge)
@@ -20,8 +27,6 @@ module Shoo
         if @dry_run
           show_dry_run_details(notifications_to_purge)
         else
-          purge_count = notifications_to_purge.size
-
           if purge_count.zero?
             puts "No notifications to purge."
           elsif confirm_purge(purge_count)
@@ -38,7 +43,6 @@ module Shoo
         else
           puts "🧹 #{"[PURGE MODE]".colorize.red.bold} Fetching and purging notifications..."
         end
-        puts ""
       end
 
       private def show_brief_summary(keeping : Array(GitHub::Notification), removing : Array(GitHub::Notification)) : Nil
@@ -73,7 +77,7 @@ module Shoo
       end
 
       private def perform_purge(notifications_to_purge : Array(GitHub::Notification), client : GitHub::Client) : Nil
-        puts "\n🧹 #{"Purging".colorize.red.bold} #{notifications_to_purge.size} notifications..."
+        puts "🧹 #{"Purging".colorize.red.bold} #{notifications_to_purge.size} notifications..."
 
         notifications = client.notifications
         results = ConcurrentWorker.run(notifications_to_purge) do |notification|

@@ -41,6 +41,10 @@ module Shoo
           options.verbose = true
         end
 
+        parser.on("--force", "Skip purge check") do
+          options.force = true
+        end
+
         define_help(parser)
       end
 
@@ -72,7 +76,7 @@ module Shoo
   private def execute_command!(command : Commands::Command.class, options : Options)
     case config = Config.load
     in Config
-      command.new(config, options.dry_run?, options.verbose?).execute
+      command.new(config, options.dry_run?, options.verbose?, options.force?).execute
     in Array(Config::Error)
       puts "Error parsing config: \n#{config.map(&.message).join("\n")}"
     end
@@ -98,6 +102,7 @@ module Shoo
     def initialize(
       @dry_run = false,
       @verbose = false,
+      @force = false,
       @command : (Commands::Command.class)? = nil,
       @parser : OptionParser? = nil,
     )
@@ -105,6 +110,7 @@ module Shoo
 
     property? dry_run : Bool
     property? verbose : Bool
+    property? force : Bool
     property command : (Commands::Command.class)?
 
     setter parser : OptionParser?

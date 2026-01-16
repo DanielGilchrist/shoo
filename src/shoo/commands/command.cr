@@ -1,7 +1,7 @@
 module Shoo
   module Commands
     abstract struct Command
-      def initialize(@config : Config, @dry_run : Bool = false, @verbose : Bool = false); end
+      def initialize(@config : Config, @dry_run : Bool = false, @verbose : Bool = false, @force = false); end
 
       abstract def execute
 
