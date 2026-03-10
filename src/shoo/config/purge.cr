@@ -14,8 +14,6 @@ module Shoo
           getter mentioned_teams : Array(String) = [] of String
           getter authors : Array(String) = [] of String
           getter? mentioned : Bool = false
-          getter labels : Array(String) = [] of String
-          getter pr_states : Array(String) = [] of String
 
           def initialize
           end
