@@ -6,6 +6,7 @@ module Shoo
     alias SubjectEndpoint = GitHub::Client::Issues | GitHub::Client::PullRequests
     alias KeepIfRules = Config::Purge::Rules::KeepIf
     alias PurgeIfRules = Config::Purge::Rules::PurgeIf
+    alias StateRule = PurgeIfRules::StateRule
 
     record SubjectAndCommentsUrl, subject_url : String, comments_url : String
 
@@ -51,12 +52,10 @@ module Shoo
 
     private def should_purge_by_state?(subject : Subject, purge_if : PurgeIfRules) : Bool
       case subject
-      when GitHub::PullRequest
+      in GitHub::PullRequest
         should_purge_pull_request?(subject, purge_if)
-      when GitHub::Issue
+      in GitHub::Issue
         should_purge_issue?(subject, purge_if)
-      else
-        false
       end
     end
 
@@ -76,23 +75,25 @@ module Shoo
       state_rule_matches?(purge_if.closed, issue.closed_at)
     end
 
-    private def state_rule_matches?(rule : PurgeIfRules::StateRule, timestamp : Time?) : Bool
-      return false unless rule.applicable?
-      return true if rule.always?
-
-      duration = rule.after_duration
-      return false unless duration
-      return false unless timestamp
-
-      duration.elapsed_since?(timestamp)
+    private def state_rule_matches?(rule : StateRule?, timestamp : Time?) : Bool
+      case rule
+      in StateRule::Always
+        true
+      in StateRule::After
+        timestamp ? rule.duration.elapsed_since?(timestamp) : false
+      in StateRule, Nil
+        false
+      end
     end
 
     private def endpoint_for(subject : GitHub::Subject) : SubjectEndpoint?
       case subject.type
-      when .pull_request?
+      in .pull_request?
         @client.pull_requests
-      when .issue?
+      in .issue?
         @client.issues
+      in .check_suite?, .discussion?, .release?, .repository_dependabot_alerts_thread?
+        nil
       end
     end
 
@@ -103,8 +104,10 @@ module Shoo
       organisation_name = notification.repository.organisation_name
 
       team_slugs.any? do |team_slug|
-        members = @team_cache.fetch(organisation_name, team_slug) do
-          @client.teams.members(organisation_name, team_slug).unwrap_or { Array(GitHub::User).new }
+        slug_value = team_slug.value
+
+        members = @team_cache.fetch(organisation_name, slug_value) do
+          @client.teams.members(organisation_name, slug_value).unwrap_or { Array(GitHub::User).new }
         end
 
         members.any? { |member| member.login == author }
@@ -132,7 +135,7 @@ module Shoo
 
       mentioned_team_slugs.any? do |team_slug|
         comments.any? do |comment|
-          contains_team_mention?(comment.body, organisation_name, team_slug)
+          contains_team_mention?(comment.body, organisation_name, team_slug.value)
         end
       end
     end

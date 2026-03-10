@@ -1,24 +1,21 @@
 module Shoo
   class Config
-    include YAML::Serializable
+    def self.load(path : String = Raw::CONFIG_PATH) : Config | Array(Error)
+      raw = Raw.load(path)
 
-    CONFIG_DIR = "#{Path.home}/.config/shoo/config.yml"
+      notifications = Notifications.parse(raw.notifications)
+      return notifications if notifications.is_a?(Array(Error))
 
-    def self.load(path : String = CONFIG_DIR) : Config | Array(Error)
-      return new unless File.exists?(path)
+      github = Github.parse(raw.github)
 
-      config = File.open(path) { |file| from_yaml(file) }
-      errors = Validator.run(config)
-      return errors unless errors.empty?
-
-      config
+      new(notifications, github)
     end
 
-    getter notifications : Notifications = Notifications.new
-    getter github : Github = Github.new
-
-    private def initialize
+    private def initialize(@notifications : Notifications, @github : Github)
     end
+
+    getter notifications : Notifications
+    getter github : Github
 
     def purge_rules_for(notification : GitHub::Notification) : Purge::Rules
       notifications.purge.repos[notification.repository_name]? || notifications.purge.global

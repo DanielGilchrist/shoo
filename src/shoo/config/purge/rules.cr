@@ -1,15 +1,31 @@
 module Shoo
   class Config
-    class Purge
-      class Rules
-        include YAML::Serializable
+    struct Purge
+      struct Rules
+        alias RawRules = Raw::Purge::Rules
 
-        getter keep_if : KeepIf = KeepIf.new
-        getter purge_if : PurgeIf = PurgeIf.new
-        getter? unsubscribe : Bool = false
+        def self.parse(raw : RawRules) : Rules | Array(Error)
+          errors = [] of Error
 
-        def initialize
+          keep_if_result = KeepIf.parse(raw.keep_if)
+          purge_if_result = PurgeIf.parse(raw.purge_if)
+
+          errors.concat(keep_if_result) if keep_if_result.is_a?(Array(Error))
+          errors.concat(purge_if_result) if purge_if_result.is_a?(Array(Error))
+          return errors unless errors.empty?
+
+          return errors unless keep_if_result.is_a?(KeepIf)
+          return errors unless purge_if_result.is_a?(PurgeIf)
+
+          new(keep_if_result, purge_if_result, raw.unsubscribe?)
         end
+
+        private def initialize(@keep_if : KeepIf, @purge_if : PurgeIf, @unsubscribe : Bool)
+        end
+
+        getter keep_if : KeepIf
+        getter purge_if : PurgeIf
+        getter? unsubscribe : Bool
       end
     end
   end

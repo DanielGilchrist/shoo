@@ -1,26 +1,36 @@
 module Shoo
   class Config
-    class Purge
-      class Rules
-        class PurgeIf
-          class StateRule
-            include YAML::Serializable
+    struct Purge
+      struct Rules
+        struct PurgeIf
+          abstract struct StateRule
+            alias Kind = Error::StateRuleError::Kind
+            alias RawStateRule = Raw::Purge::Rules::PurgeIf::StateRule
 
-            getter? always : Bool = false
-            getter after : String? = nil
+            def self.parse(raw : RawStateRule, kind : Kind) : StateRule? | Error
+              if raw.always? && raw.after
+                return Error::StateRuleError.mutually_exclusive(kind)
+              end
 
-            def initialize
+              return Always.new if raw.always?
+
+              after = raw.after
+              return unless after
+
+              duration = Duration.parse(after)
+              return Error::StateRuleError.invalid_duration(kind, after) unless duration
+
+              After.new(duration)
             end
 
-            def applicable? : Bool
-              always? || !after.nil?
+            struct Always < StateRule
             end
 
-            def after_duration : Duration?
-              raw = after
-              return unless raw
+            struct After < StateRule
+              def initialize(@duration : Duration)
+              end
 
-              Duration.parse(raw)
+              getter duration : Duration
             end
           end
         end
