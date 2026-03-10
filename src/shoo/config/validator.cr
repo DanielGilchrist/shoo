@@ -20,35 +20,49 @@ module Shoo
       end
 
       private def validate_purge_rules(rules : Purge::Rules) : Array(Error)
-        keep_if_config = rules.keep_if
-
         [
-          validate_author_in_teams(keep_if_config),
-          validate_requested_teams(keep_if_config),
-          validate_mentioned_teams(keep_if_config),
+          validate_keep_if(rules.keep_if),
+          validate_purge_if(rules.purge_if),
         ].flatten
       end
 
-      private def validate_author_in_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
-        keep_if_config.author_in_teams.compact_map do |team_slug|
-          Error::SlugError.for(team_slug, :author_in_teams) if invalid_slug?(team_slug)
+      # keep_if validations
+
+      private def validate_keep_if(keep_if : Purge::Rules::KeepIf) : Array(Error)
+        [
+          validate_slugs(keep_if.author_in_teams, :author_in_teams),
+          validate_slugs(keep_if.requested_teams, :requested_teams),
+          validate_slugs(keep_if.mentioned_teams, :mentioned_teams),
+        ].flatten
+      end
+
+      private def validate_slugs(team_slugs : Array(String), kind : Error::SlugError::Kind) : Array(Error)
+        team_slugs.compact_map do |team_slug|
+          Error::SlugError.for(team_slug, kind) unless team_slug.matches?(SLUG_REGEX)
         end
       end
 
-      private def validate_requested_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
-        keep_if_config.requested_teams.compact_map do |team_slug|
-          Error::SlugError.for(team_slug, :requested_teams) if invalid_slug?(team_slug)
-        end
+      # purge_if validations
+
+      private def validate_purge_if(purge_if : Purge::Rules::PurgeIf) : Array(Error)
+        [
+          validate_state_rule(purge_if.merged, :merged),
+          validate_state_rule(purge_if.closed, :closed),
+        ].flatten
       end
 
-      private def validate_mentioned_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
-        keep_if_config.mentioned_teams.compact_map do |team_slug|
-          Error::SlugError.for(team_slug, :mentioned_teams) if invalid_slug?(team_slug)
-        end
-      end
+      private def validate_state_rule(rule : Purge::Rules::PurgeIf::StateRule, kind : Error::StateRuleError::Kind) : Array(Error)
+        errors = [] of Error
 
-      private def invalid_slug?(maybe_slug : String) : Bool
-        !maybe_slug.matches?(SLUG_REGEX)
+        if rule.always? && rule.after
+          errors << Error::StateRuleError.mutually_exclusive(kind)
+        end
+
+        if (after = rule.after) && rule.after_duration.nil?
+          errors << Error::StateRuleError.invalid_duration(kind, after)
+        end
+
+        errors
       end
     end
   end

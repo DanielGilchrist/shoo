@@ -5,8 +5,16 @@ module Shoo
 
       getter user : User
       getter title : String
-      getter state : String
+
+      @[JSON::Field(converter: Shoo::GitHub::Converters::SubjectState)]
+      getter state : SubjectState
+
       getter comments_url : String
+      getter closed_at : Time?
+
+      def closed? : Bool
+        state.closed?
+      end
     end
   end
 end

@@ -4,7 +4,8 @@ module Shoo
     alias SubjectsByUrl = Hash(String, Subject)
     alias CommentsByUrl = Hash(String, Array(GitHub::Comment))
     alias SubjectEndpoint = GitHub::Client::Issues | GitHub::Client::PullRequests
-    alias KeepRules = Config::Purge::Rules::Keep
+    alias KeepIfRules = Config::Purge::Rules::KeepIf
+    alias PurgeIfRules = Config::Purge::Rules::PurgeIf
 
     record SubjectAndCommentsUrl, subject_url : String, comments_url : String
 
@@ -25,9 +26,6 @@ module Shoo
       return true if notification.always_keep?
 
       rules = @config.purge_rules_for(notification)
-      keep_rules = rules.keep_if
-
-      return true if keep_rules.mentioned? && notification.reason.mention?
       return false unless notification.subject.should_check_author?
 
       url = notification.subject.url
@@ -36,12 +34,57 @@ module Shoo
       subject = subjects_by_url[url]?
       return false unless subject
 
+      purge_if_rules = rules.purge_if
+      return false if purge_if_rules.applicable? && should_purge_by_state?(subject, purge_if_rules)
+
+      keep_rules = rules.keep_if
+
+      return true if keep_rules.mentioned? && notification.reason.mention?
+
       author = subject.user.login
       return true if author_in_teams?(author, notification, keep_rules)
       return true if subject.is_a?(GitHub::PullRequest) && requested_teams?(subject, keep_rules)
       return true if team_mentioned?(subject, notification, keep_rules)
 
       false
+    end
+
+    private def should_purge_by_state?(subject : Subject, purge_if : PurgeIfRules) : Bool
+      case subject
+      when GitHub::PullRequest
+        should_purge_pull_request?(subject, purge_if)
+      when GitHub::Issue
+        should_purge_issue?(subject, purge_if)
+      else
+        false
+      end
+    end
+
+    private def should_purge_pull_request?(pull_request : GitHub::PullRequest, purge_if : PurgeIfRules) : Bool
+      if pull_request.merged?
+        state_rule_matches?(purge_if.merged, pull_request.merged_at)
+      elsif pull_request.state.closed?
+        state_rule_matches?(purge_if.closed, pull_request.closed_at)
+      else
+        false
+      end
+    end
+
+    private def should_purge_issue?(issue : GitHub::Issue, purge_if : PurgeIfRules) : Bool
+      return false unless issue.closed?
+
+      state_rule_matches?(purge_if.closed, issue.closed_at)
+    end
+
+    private def state_rule_matches?(rule : PurgeIfRules::StateRule, timestamp : Time?) : Bool
+      return false unless rule.applicable?
+      return true if rule.always?
+
+      duration = rule.after_duration
+      return false unless duration
+      return false unless timestamp
+
+      duration.elapsed_since?(timestamp)
     end
 
     private def endpoint_for(subject : GitHub::Subject) : SubjectEndpoint?
@@ -53,7 +96,7 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, notification : GitHub::Notification, keep_rules : KeepRules) : Bool
+    private def author_in_teams?(author : String, notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
       team_slugs = keep_rules.author_in_teams
       return false if team_slugs.empty?
 
@@ -68,7 +111,7 @@ module Shoo
       end
     end
 
-    private def requested_teams?(pull_request : GitHub::PullRequest, keep_rules : KeepRules) : Bool
+    private def requested_teams?(pull_request : GitHub::PullRequest, keep_rules : KeepIfRules) : Bool
       teams = pull_request.requested_teams
       team_slugs = keep_rules.requested_teams
 
@@ -77,7 +120,7 @@ module Shoo
       end
     end
 
-    private def team_mentioned?(subject : Subject, notification : GitHub::Notification, keep_rules : KeepRules) : Bool
+    private def team_mentioned?(subject : Subject, notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
       return false unless notification.team_mentioned?
 
       mentioned_team_slugs = keep_rules.mentioned_teams

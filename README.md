@@ -29,6 +29,11 @@ notifications:
       keep_if:
         authors: ["DanielGilchrist", "trusted-maintainer"]
         mentioned: false
+      purge_if:
+        merged:
+          always: true # always purge merged PRs
+        closed:
+          after: 2d # purge closed PRs/issues 2 days after they were closed
 
     # Repo-specific rules (override global)
     repos:
@@ -38,6 +43,11 @@ notifications:
           requested_teams: ["core-team"] # keep if one of these teams is requested for review (in slug form)
           mentioned_teams: ["core-team"] # keep if one of these teams is mentioned (in slug form)
           mentioned: true
+        purge_if:
+          merged:
+            after: 1w # keep merged PRs for a week before purging
+          closed:
+            always: true # always purge closed PRs/issues
 
       "my-org/experimental-repo":
         keep_if:
@@ -45,6 +55,14 @@ notifications:
 ```
 
 ## How it works
+
+`purge_if` rules are evaluated first. If a notification matches a `purge_if` rule, it is purged regardless of `keep_if` rules.
+
+`purge_if` supports `merged` and `closed` states independently:
+- `always: true` — purge immediately
+- `after: <duration>` — purge after the given duration has elapsed since the PR was merged / issue was closed
+- Supported duration formats: `30m`, `1h`, `2d`, `1w`
+- `always` and `after` are mutually exclusive
 
 Shoo will always keep notifications for:
 - PRs/issues you are subscribed to (`reason="subscribed"`)
