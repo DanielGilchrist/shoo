@@ -31,28 +31,24 @@ module Shoo
 
       private def validate_author_in_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
         keep_if_config.author_in_teams.compact_map do |team_slug|
-          Error.new(slug_error_message(team_slug, "author_in_teams")) if invalid_slug?(team_slug)
+          Error::SlugError.for(team_slug, :author_in_teams) if invalid_slug?(team_slug)
         end
       end
 
       private def validate_requested_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
         keep_if_config.requested_teams.compact_map do |team_slug|
-          Error.new(slug_error_message(team_slug, "requested_teams")) if invalid_slug?(team_slug)
+          Error::SlugError.for(team_slug, :requested_teams) if invalid_slug?(team_slug)
         end
       end
 
       private def validate_mentioned_teams(keep_if_config : Purge::Rules::Keep) : Array(Error)
         keep_if_config.mentioned_teams.compact_map do |team_slug|
-          Error.new(slug_error_message(team_slug, "mentioned_teams")) if invalid_slug?(team_slug)
+          Error::SlugError.for(team_slug, :mentioned_teams) if invalid_slug?(team_slug)
         end
       end
 
       private def invalid_slug?(maybe_slug : String) : Bool
         !maybe_slug.matches?(SLUG_REGEX)
-      end
-
-      private def slug_error_message(invalid_slug : String, key : String) : String
-        "\"#{invalid_slug}\" in `#{key}` must be in slug format!"
       end
     end
   end
