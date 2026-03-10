@@ -24,19 +24,16 @@ module Shoo
     end
 
     private def should_keep?(notification : GitHub::Notification) : Bool
-      return true if notification.always_keep?
-
       rules = @config.purge_rules_for(notification)
-      return false unless notification.subject.should_check_author?
+      subject = fetch_subject(notification)
 
-      url = notification.subject.url
-      return false unless url
+      if subject
+        purge_if_rules = rules.purge_if
+        return false if purge_if_rules.applicable? && should_purge_by_state?(subject, purge_if_rules)
+      end
 
-      subject = subjects_by_url[url]?
+      return true if notification.always_keep?
       return false unless subject
-
-      purge_if_rules = rules.purge_if
-      return false if purge_if_rules.applicable? && should_purge_by_state?(subject, purge_if_rules)
 
       keep_rules = rules.keep_if
 
@@ -48,6 +45,15 @@ module Shoo
       return true if team_mentioned?(subject, notification, keep_rules)
 
       false
+    end
+
+    private def fetch_subject(notification : GitHub::Notification) : Subject?
+      return unless notification.subject.should_check_author?
+
+      url = notification.subject.url
+      return unless url
+
+      subjects_by_url[url]?
     end
 
     private def should_purge_by_state?(subject : Subject, purge_if : PurgeIfRules) : Bool
@@ -172,8 +178,15 @@ module Shoo
       results.to_h
     end
 
+    private def needs_subject_fetch?(notification : GitHub::Notification) : Bool
+      return true unless notification.always_keep?
+
+      rules = @config.purge_rules_for(notification)
+      rules.purge_if.applicable?
+    end
+
     private def fetch_subjects_by_url_concurrently : SubjectsByUrl
-      notifications_to_fetch = @notifications.reject(&.always_keep?)
+      notifications_to_fetch = @notifications.select { |n| needs_subject_fetch?(n) }
 
       results = ConcurrentWorker.run(notifications_to_fetch) do |notification|
         subject = notification.subject
