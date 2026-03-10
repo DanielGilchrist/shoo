@@ -12,17 +12,18 @@ module Shoo
         notifications_to_keep, notifications_to_purge = notification_filter.filter
         purge_count = notifications_to_purge.size
 
+        if @verbose
+          show_summary(notifications, notifications_to_keep, notifications_to_purge)
+          puts
+        else
+          show_brief_summary(notifications_to_keep, notifications_to_purge)
+        end
+
         if purge_count.zero?
           return puts "No notifications to purge."
         end
 
         return perform_purge(notifications_to_purge, client) if @force
-
-        if @verbose
-          show_summary(notifications, notifications_to_keep, notifications_to_purge)
-        else
-          show_brief_summary(notifications_to_keep, notifications_to_purge)
-        end
 
         if @dry_run
           show_dry_run_details(notifications_to_purge)
