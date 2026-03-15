@@ -15,10 +15,6 @@ module Shoo
       getter? merged : Bool = false
       getter merged_at : Time?
       getter closed_at : Time?
-
-      def merged_or_closed? : Bool
-        merged? || state.closed?
-      end
     end
   end
 end

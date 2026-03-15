@@ -17,8 +17,8 @@ module Shoo
     getter notifications : Notifications
     getter github : Github
 
-    def purge_rules_for(notification : GitHub::Notification) : Purge::Rules
-      notifications.purge.repos[notification.repository_name]? || notifications.purge.global
+    def purge_rules_for(repository_name : String) : Purge::Rules
+      notifications.purge.repos[repository_name]? || notifications.purge.global
     end
   end
 end

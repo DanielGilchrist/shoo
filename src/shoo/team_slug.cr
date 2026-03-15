@@ -16,9 +16,5 @@ module Shoo
     def ==(other : String) : Bool
       @value == other
     end
-
-    def to_s : String
-      @value
-    end
   end
 end

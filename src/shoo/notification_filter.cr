@@ -8,77 +8,92 @@ module Shoo
     alias PurgeIfRules = Config::Purge::Rules::PurgeIf
     alias StateRule = PurgeIfRules::StateRule
 
+    ALWAYS_KEEP_REASONS = {
+      GitHub::NotificationReason::Author,
+      GitHub::NotificationReason::Subscribed,
+      GitHub::NotificationReason::Comment,
+      GitHub::NotificationReason::Assign,
+      GitHub::NotificationReason::Manual,
+    }
+
     record SubjectAndCommentsUrl, subject_url : String, comments_url : String
 
     @subjects_by_url : SubjectsByUrl? = nil
     @comments_by_url : CommentsByUrl? = nil
 
-    def initialize(@config : Config, @client : GitHub::Client, @notifications : Array(GitHub::Notification))
+    def initialize(@config : Config, @client : GitHub::Client, @github_notifications : Array(GitHub::Notification))
       @team_cache = Cache(Array(GitHub::User)).new
     end
 
-    def filter : {Array(GitHub::Notification), Array(GitHub::Notification)}
-      @notifications.partition do |notification|
-        should_keep?(notification)
+    def filter : Array(Notification::Any)
+      @github_notifications.map do |github_notification|
+        purge_reason = purge_reason_for(github_notification)
+
+        if purge_reason
+          Notification::Purged.new(github_notification, purge_reason)
+        else
+          Notification::Kept.new(github_notification)
+        end
       end
     end
 
-    private def should_keep?(notification : GitHub::Notification) : Bool
-      rules = @config.purge_rules_for(notification)
-      subject = fetch_subject(notification)
+    private def purge_reason_for(github_notification : GitHub::Notification) : PurgeReason?
+      rules = @config.purge_rules_for(github_notification.repository.full_name)
+      subject = fetch_subject(github_notification)
 
       if subject
         purge_if_rules = rules.purge_if
-        return false if purge_if_rules.applicable? && should_purge_by_state?(subject, purge_if_rules)
+        if purge_if_rules.applicable?
+          reason = state_purge_reason(subject, purge_if_rules)
+          return reason if reason
+        end
       end
 
-      return true if notification.always_keep?
-      return false unless subject
+      return if always_keep?(github_notification)
+      return PurgeReason::Filtered unless subject
 
       keep_rules = rules.keep_if
 
-      return true if keep_rules.mentioned? && notification.reason.mention?
+      return if keep_rules.mentioned? && github_notification.reason.mention?
 
       author = subject.user.login
-      return true if author_in_teams?(author, notification, keep_rules)
-      return true if subject.is_a?(GitHub::PullRequest) && requested_teams?(subject, keep_rules)
-      return true if team_mentioned?(subject, notification, keep_rules)
+      return if author_in_teams?(author, github_notification, keep_rules)
+      return if subject.is_a?(GitHub::PullRequest) && requested_teams?(subject, keep_rules)
+      return if team_mentioned?(subject, github_notification, keep_rules)
 
-      false
+      PurgeReason::Filtered
     end
 
-    private def fetch_subject(notification : GitHub::Notification) : Subject?
-      return unless notification.subject.should_check_author?
+    private def fetch_subject(github_notification : GitHub::Notification) : Subject?
+      return unless github_notification.subject.should_check_author?
 
-      url = notification.subject.url
+      url = github_notification.subject.url
       return unless url
 
       subjects_by_url[url]?
     end
 
-    private def should_purge_by_state?(subject : Subject, purge_if : PurgeIfRules) : Bool
+    private def state_purge_reason(subject : Subject, purge_if : PurgeIfRules) : PurgeReason?
       case subject
       in GitHub::PullRequest
-        should_purge_pull_request?(subject, purge_if)
+        pull_request_purge_reason(subject, purge_if)
       in GitHub::Issue
-        should_purge_issue?(subject, purge_if)
+        issue_purge_reason(subject, purge_if)
       end
     end
 
-    private def should_purge_pull_request?(pull_request : GitHub::PullRequest, purge_if : PurgeIfRules) : Bool
+    private def pull_request_purge_reason(pull_request : GitHub::PullRequest, purge_if : PurgeIfRules) : PurgeReason?
       if pull_request.merged?
-        state_rule_matches?(purge_if.merged, pull_request.merged_at)
+        PurgeReason::Merged if state_rule_matches?(purge_if.merged, pull_request.merged_at)
       elsif pull_request.state.closed?
-        state_rule_matches?(purge_if.closed, pull_request.closed_at)
-      else
-        false
+        PurgeReason::Closed if state_rule_matches?(purge_if.closed, pull_request.closed_at)
       end
     end
 
-    private def should_purge_issue?(issue : GitHub::Issue, purge_if : PurgeIfRules) : Bool
-      return false unless issue.closed?
+    private def issue_purge_reason(issue : GitHub::Issue, purge_if : PurgeIfRules) : PurgeReason?
+      return unless issue.closed?
 
-      state_rule_matches?(purge_if.closed, issue.closed_at)
+      PurgeReason::Closed if state_rule_matches?(purge_if.closed, issue.closed_at)
     end
 
     private def state_rule_matches?(rule : StateRule?, timestamp : Time?) : Bool
@@ -103,11 +118,11 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
+    private def author_in_teams?(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
       team_slugs = keep_rules.author_in_teams
       return false if team_slugs.empty?
 
-      organisation_name = notification.repository.organisation_name
+      organisation_name = github_notification.repository.organisation_name
 
       team_slugs.any? do |team_slug|
         slug_value = team_slug.value
@@ -129,14 +144,14 @@ module Shoo
       end
     end
 
-    private def team_mentioned?(subject : Subject, notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
-      return false unless notification.team_mentioned?
+    private def team_mentioned?(subject : Subject, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
+      return false unless github_notification.reason.team_mention?
 
       mentioned_team_slugs = keep_rules.mentioned_teams
       return false if mentioned_team_slugs.empty?
 
-      organisation_name = notification.repository.organisation_name
-      comments = comments_by_url[notification.subject.url]?
+      organisation_name = github_notification.repository.organisation_name
+      comments = comments_by_url[github_notification.subject.url]?
       return false if comments.nil? || comments.empty?
 
       mentioned_team_slugs.any? do |team_slug|
@@ -144,6 +159,10 @@ module Shoo
           contains_team_mention?(comment.body, organisation_name, team_slug.value)
         end
       end
+    end
+
+    private def always_keep?(github_notification : GitHub::Notification) : Bool
+      ALWAYS_KEEP_REASONS.includes?(github_notification.reason)
     end
 
     private def contains_team_mention?(content : String, organisation_name : String, team_slug : String)
@@ -178,18 +197,18 @@ module Shoo
       results.to_h
     end
 
-    private def needs_subject_fetch?(notification : GitHub::Notification) : Bool
-      return true unless notification.always_keep?
+    private def needs_subject_fetch?(github_notification : GitHub::Notification) : Bool
+      return true unless always_keep?(github_notification)
 
-      rules = @config.purge_rules_for(notification)
+      rules = @config.purge_rules_for(github_notification.repository.full_name)
       rules.purge_if.applicable?
     end
 
     private def fetch_subjects_by_url_concurrently : SubjectsByUrl
-      notifications_to_fetch = @notifications.select { |n| needs_subject_fetch?(n) }
+      notifications_to_fetch = @github_notifications.select { |n| needs_subject_fetch?(n) }
 
-      results = ConcurrentWorker.run(notifications_to_fetch) do |notification|
-        subject = notification.subject
+      results = ConcurrentWorker.run(notifications_to_fetch) do |github_notification|
+        subject = github_notification.subject
         url = subject.url
         next unless url
 
