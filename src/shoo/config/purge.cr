@@ -1,36 +1,37 @@
 module Shoo
   class Config
-    class Purge
-      include YAML::Serializable
+    struct Purge
+      def self.parse(raw : Raw::Purge) : Purge | Array(Error)
+        errors = [] of Error
 
-      class Rules
-        include YAML::Serializable
+        global_result = Rules.parse(raw.global)
 
-        class Keep
-          include YAML::Serializable
+        repos = Hash(String, Rules).new
+        raw.repos.each do |name, raw_rules|
+          result = Rules.parse(raw_rules)
 
-          getter author_in_teams : Array(String) = [] of String
-          getter requested_teams : Array(String) = [] of String
-          getter mentioned_teams : Array(String) = [] of String
-          getter authors : Array(String) = [] of String
-          getter? mentioned : Bool = false
-
-          def initialize
+          if result.is_a?(Array(Error))
+            errors.concat(result)
+          else
+            repos[name] = result
           end
         end
 
-        getter keep_if : Keep = Keep.new
-        getter? unsubscribe : Bool = false
-
-        def initialize
+        case global_result
+        in Array(Error)
+          errors.concat(global_result)
+        in Rules
+          return new(global_result, repos) if errors.empty?
         end
+
+        errors
       end
 
-      getter global : Rules = Rules.new
-      getter repos : Hash(String, Rules) = Hash(String, Rules).new
-
-      def initialize
+      private def initialize(@global : Rules, @repos : Hash(String, Rules))
       end
+
+      getter global : Rules
+      getter repos : Hash(String, Rules)
     end
   end
 end
