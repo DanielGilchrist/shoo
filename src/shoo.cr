@@ -13,36 +13,37 @@ module Shoo
 
   def main(args : Array(String))
     options = parse_options!(args)
+    return puts options.parser if options.args.empty?
 
     if command = options.command
       execute_command!(command, options)
     else
-      puts "#{"Invalid command: ".colorize.red}\"#{args.join(" ").colorize.bold}\""
+      puts "#{"Invalid command: ".colorize.red}\"#{options.args.join(" ").colorize.bold}\""
       help(options.parser)
     end
   end
 
   def parse_options!(args : Array(String)) : Options
-    options = Options.new
+    options = Options.new(args)
 
     options.parser = OptionParser.parse(args) do |parser|
       parser.banner = "Usage: shoo [subcommand] [arguments]"
 
       parser.on("notification", "Commands for notifications") do
         parser.on("purge", "Purge unwanted notifications") do
+          parser.on("--dry-run", "Show what would be purged without actually purging") do
+            options.dry_run = true
+          end
+
+          parser.on("--verbose", "Show detailed output") do
+            options.verbose = true
+          end
+
+          parser.on("--force", "Skip purge check") do
+            options.force = true
+          end
+
           options.command = Commands::Purge
-        end
-
-        parser.on("--dry-run", "Show what would be purged without actually purging") do
-          options.dry_run = true
-        end
-
-        parser.on("--verbose", "Show detailed output") do
-          options.verbose = true
-        end
-
-        parser.on("--force", "Skip purge check") do
-          options.force = true
         end
 
         define_help(parser)
@@ -100,13 +101,17 @@ module Shoo
     end
 
     def initialize(
+      args : Array(String),
       @dry_run = false,
       @verbose = false,
       @force = false,
       @command : (Commands::Command.class)? = nil,
       @parser : OptionParser? = nil,
     )
+      @args = args.dup
     end
+
+    getter args : Array(String)
 
     property? dry_run : Bool
     property? verbose : Bool
