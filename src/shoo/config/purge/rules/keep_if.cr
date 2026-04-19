@@ -19,7 +19,7 @@ module Shoo
 
           private def self.parse_slugs(raw_slugs : Array(String), kind : Error::SlugError::Kind, errors : Array(Error)) : Array(TeamSlug)
             raw_slugs.each_with_object([] of TeamSlug) do |raw_slug, slugs|
-              slug = TeamSlug.parse(raw_slug)
+              slug = TeamSlug.parse?(raw_slug)
 
               if slug
                 slugs << slug

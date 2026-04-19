@@ -17,7 +17,7 @@ module Shoo
               after = raw.after
               return unless after
 
-              duration = Duration.parse(after)
+              duration = Duration.parse?(after)
               return Error::StateRuleError.invalid_duration(kind, after) unless duration
 
               After.new(duration)

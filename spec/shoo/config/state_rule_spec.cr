@@ -64,9 +64,9 @@ describe Shoo::Config::Purge::Rules::PurgeIf::StateRule do
           YAML
 
         result.should be_a(Error)
-        error = result.as(Error)
-        error.message.not_nil!.should contain("cannot have both")
-        error.message.not_nil!.should contain("merged")
+        message = result.as(Error).message
+        message.should match(/cannot have both/)
+        message.should match(/merged/)
       end
 
       it "includes the correct state name in the error" do
@@ -76,7 +76,7 @@ describe Shoo::Config::Purge::Rules::PurgeIf::StateRule do
           YAML
 
         result.should be_a(Error)
-        result.as(Error).message.not_nil!.should contain("closed")
+        result.as(Error).message.should match(/closed/)
       end
     end
 
@@ -87,9 +87,9 @@ describe Shoo::Config::Purge::Rules::PurgeIf::StateRule do
           YAML
 
         result.should be_a(Error)
-        error = result.as(Error)
-        error.message.not_nil!.should contain("invalid duration")
-        error.message.not_nil!.should contain("banana")
+        message = result.as(Error).message
+        message.should match(/invalid duration/)
+        message.should match(/banana/)
       end
 
       it "returns an error for unitless number" do

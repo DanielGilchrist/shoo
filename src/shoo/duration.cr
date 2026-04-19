@@ -2,7 +2,7 @@ module Shoo
   struct Duration
     PATTERN = /^(\d+)(m|h|d|w)$/
 
-    def self.parse(value : String) : Duration?
+    def self.parse?(value : String) : Duration?
       match = PATTERN.match(value)
       return unless match
 

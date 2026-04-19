@@ -101,7 +101,7 @@ describe Shoo::Config::Purge::Rules::PurgeIf do
       result.should be_a(Array(Error))
       errors = result.as(Array(Error))
       errors.size.should eq(1)
-      errors.first.message.not_nil!.should contain("merged")
+      errors.first.message.should match(/merged/)
     end
 
     it "returns error for invalid closed duration" do
@@ -113,7 +113,7 @@ describe Shoo::Config::Purge::Rules::PurgeIf do
       result.should be_a(Array(Error))
       errors = result.as(Array(Error))
       errors.size.should eq(1)
-      errors.first.message.not_nil!.should contain("closed")
+      errors.first.message.should match(/closed/)
     end
   end
 end

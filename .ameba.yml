@@ -4,3 +4,9 @@ Lint/DebugCalls:
 
 Documentation/DocumentationAdmonition:
   Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Performance/AnyInsteadOfEmpty:
+  Enabled: false

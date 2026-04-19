@@ -157,11 +157,11 @@ module Shoo
       end
 
       private def max_reason_width(notifications : Array) : Int32
-        notifications.max_of? { |n| n.reason.to_s.size } || 0
+        notifications.max_of?(&.reason.to_s.size) || 0
       end
 
       private def max_purge_reason_width(notifications : Array(Notification::Purged)) : Int32
-        notifications.max_of? { |n| n.purge_reason.to_s.size } || 0
+        notifications.max_of?(&.purge_reason.to_s.size) || 0
       end
 
       private def colourised_purge_reason(reason : PurgeReason, width : Int32) : String

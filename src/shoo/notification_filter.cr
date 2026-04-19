@@ -205,7 +205,7 @@ module Shoo
     end
 
     private def fetch_subjects_by_url_concurrently : SubjectsByUrl
-      notifications_to_fetch = @github_notifications.select { |n| needs_subject_fetch?(n) }
+      notifications_to_fetch = @github_notifications.select(&->needs_subject_fetch?(GitHub::Notification))
 
       results = ConcurrentWorker.run(notifications_to_fetch) do |github_notification|
         subject = github_notification.subject
