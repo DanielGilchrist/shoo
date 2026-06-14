@@ -1,7 +1,7 @@
 require "colorize"
 require "http/client"
 require "json"
-require "option_parser"
+require "kebab"
 require "yaml"
 
 require "./shoo/**"
@@ -12,39 +12,26 @@ module Shoo
   VERSION = "0.1.0"
 
   def main(args : Array(String))
-    options = Parser.new(args).parse!
-    return print_help(options) if options.empty?
-    return print_errors(options) if options.errors?
-    return print_help(options) if options.show_help?
-
-    command = options.command
-    return execute_command!(command, options) if command
-
-    print_invalid_command(options)
-  end
-
-  private def print_help(options : Options)
-    puts options.parser
-  end
-
-  private def print_errors(options : Options)
-    puts options.errors
-    puts print_help(options)
-  end
-
-  # TODO: Make this more generic
-  private def execute_command!(command : Commands::Command.class, options : Options)
-    case config = Config.load
-    in Config
-      command.new(config, options.dry_run?, options.verbose?, options.force?).execute
-    in Array(Config::Error)
-      puts "Error parsing config: \n#{config.map(&.message).join("\n")}"
+    case result = Commands::Main.parse(args)
+    in Commands::Main
+      run!(result)
+    in Kebab::Help
+      puts result
+    in Kebab::Errors
+      STDERR.puts(result)
+      exit(1)
     end
   end
 
-  private def print_invalid_command(options : Options)
-    puts "#{"Invalid command: ".colorize.red}\"#{options.args.join(" ").colorize.bold}\""
-    print_help(options)
+  private def run!(command : Commands::Main)
+    case config = Config.load
+    in Config
+      command.run(config)
+    in Array(Config::Error)
+      puts "Error parsing config:"
+      config.each { |error| puts "  #{error.message}" }
+      exit(1)
+    end
   end
 end
 

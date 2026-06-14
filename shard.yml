@@ -8,6 +8,11 @@ targets:
   shoo:
     main: src/shoo.cr
 
+dependencies:
+  kebab:
+    github: DanielGilchrist/kebab
+    branch: main
+
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba

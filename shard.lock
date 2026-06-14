@@ -4,3 +4,7 @@ shards:
     git: https://github.com/crystal-ameba/ameba.git
     version: 1.6.4
 
+  kebab:
+    git: https://github.com/danielgilchrist/kebab.git
+    version: 0.1.0+git.commit.4e5b3559b52bb30abcf4ded97a47d888743f6794
+
