@@ -10,6 +10,10 @@ module Shoo
       def initialize(@value : T | E)
       end
 
+      def value : T | E
+        @value
+      end
+
       def ok? : T?
         unwrap_or(nil)
       end
@@ -18,22 +22,12 @@ module Shoo
         unwrap_or { default }
       end
 
-      def unwrap_or(& : -> U) : T | U forall U
+      def unwrap_or(& : E -> U) : T | U forall U
         case value = @value
         in T
           value
         in E
-          yield
-        end
-      end
-
-      def expect!(message : String) : T
-        case value = @value
-        in T
-          value
-        in E
-          STDERR.puts "#{message}: #{value.message}"
-          exit 1
+          yield(value)
         end
       end
     end

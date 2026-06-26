@@ -1,0 +1,6 @@
+notifications:
+  purge:
+    global:
+      purge_if:
+        merged:
+          always: true
