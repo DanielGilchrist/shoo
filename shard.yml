@@ -6,7 +6,7 @@ authors:
 
 targets:
   shoo:
-    main: src/shoo.cr
+    main: src/main.cr
 
 dependencies:
   kebab:

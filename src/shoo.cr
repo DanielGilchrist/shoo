@@ -66,15 +66,3 @@ module Shoo
     end
   end
 end
-
-{% unless flag?(:test) %}
-  {% if flag?(:debug) %}
-    Shoo::Debug.setup
-  {% end %}
-
-  begin
-    Shoo.main(ARGV)
-  rescue ex : Shoo::ExitProgram
-    exit(ex.code)
-  end
-{% end %}

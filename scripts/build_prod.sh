@@ -3,8 +3,8 @@
 # This script assumes you're running it from the root of the project
 # i.e. ./scripts/build_prod.sh
 
-shards check || shards install && crystal build src/shoo.cr --release --no-debug --progress --stats \
+shards check || shards install \
   && mkdir -p bin \
-  && mv shoo bin/shoo \
+  && crystal build src/main.cr --release --no-debug --progress --stats -o bin/shoo \
   && echo \
   && printf "\e[32mSuccess:\e[0m compiled release binary to $(pwd)/bin/shoo\n"
