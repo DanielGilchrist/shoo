@@ -5,7 +5,7 @@ module Shoo
       include Kebab::Parseable
 
       @[Kebab::Subcommand]
-      getter command : Purge
+      getter command : Purge | List
     end
   end
 end

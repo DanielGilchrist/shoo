@@ -13,15 +13,21 @@ module Shoo
       @[Kebab::Option(description: "Skip purge check")]
       getter? force : Bool = false
 
-      def run(config : Config) : Nil
-        show_mode_banner
+      def run(context : Context) : Nil
+        stdout = context.stdout
+        client = context.client
 
-        token = retrieve_token!(config)
-        client = GitHub::Client.new(token)
+        show_mode_banner(stdout)
 
-        github_notifications = fetch_notifications(client)
-        notification_filter = NotificationFilter.new(config, client, github_notifications)
-        results = notification_filter.filter
+        github_notifications =
+          case result = client.notifications.all
+          in Array(GitHub::Notification)
+            result
+          in GitHub::Error
+            context.abort!("Error fetching notifications: #{result.message}")
+          end
+
+        results = NotificationFilter.new(context.config, client, github_notifications).filter
 
         keeping = Array(::Shoo::Notification::Kept).new
         removing = Array(::Shoo::Notification::Purged).new
@@ -38,88 +44,74 @@ module Shoo
         purge_count = removing.size
 
         if verbose?
-          show_summary(github_notifications, keeping, removing)
-          puts
+          show_summary(stdout, github_notifications, results)
+          stdout.puts
         else
-          show_brief_summary(keeping, removing)
+          show_brief_summary(stdout, keeping, removing)
         end
 
         if purge_count.zero?
-          return puts "No notifications to purge."
+          return stdout.puts "No notifications to purge."
         end
 
-        return perform_purge(config, removing, client) if force?
+        return perform_purge(context, removing) if force?
 
         if dry_run?
-          show_dry_run_details(removing)
+          show_dry_run_details(stdout, removing)
+        elsif confirm_purge(context, purge_count)
+          perform_purge(context, removing)
         else
-          if purge_count.zero?
-            puts "No notifications to purge."
-          elsif confirm_purge(purge_count)
-            perform_purge(config, removing, client)
-          else
-            puts "Purge cancelled."
-          end
+          stdout.puts "Purge cancelled."
         end
       end
 
-      private def retrieve_token!(config : Config) : String
-        token = config.github.token
-
-        if token.nil? || token.blank?
-          puts "GitHub token not provided!"
-          exit
-        end
-
-        token
-      end
-
-      private def show_mode_banner : Nil
+      private def show_mode_banner(io : IO) : Nil
         if dry_run?
-          puts "🔍 #{"[DRY RUN MODE]".colorize.cyan.bold} Analyzing notifications to show what would be purged..."
+          io.puts "🔍 #{"[DRY RUN MODE]".colorize.cyan.bold} Analyzing notifications to show what would be purged..."
         else
-          puts "🧹 #{"[PURGE MODE]".colorize.red.bold} Fetching and purging notifications..."
+          io.puts "🧹 #{"[PURGE MODE]".colorize.red.bold} Fetching and purging notifications..."
         end
       end
 
-      private def show_brief_summary(keeping : Array(::Shoo::Notification::Kept), removing : Array(::Shoo::Notification::Purged)) : Nil
-        puts "Keeping #{keeping.size.to_s.colorize.green.bold} notifications, removing #{removing.size.to_s.colorize.red.bold} notifications"
+      private def show_brief_summary(io : IO, keeping : Array(::Shoo::Notification::Kept), removing : Array(::Shoo::Notification::Purged)) : Nil
+        io.puts "Keeping #{keeping.size.to_s.colorize.green.bold} notifications, removing #{removing.size.to_s.colorize.red.bold} notifications"
       end
 
-      private def show_summary(github_notifications : Array(GitHub::Notification), keeping : Array(::Shoo::Notification::Kept), removing : Array(::Shoo::Notification::Purged)) : Nil
-        puts "Total notifications: #{github_notifications.size}".colorize.white.bold
-
-        show_keeping_list(keeping)
-        show_removing_list(removing)
+      private def show_summary(io : IO, github_notifications : Array(GitHub::Notification), results : Array(::Shoo::Notification::Any)) : Nil
+        io.puts "Total notifications: #{github_notifications.size}".colorize.white.bold
+        Representers::NotificationVerdict.new(results).display(io)
       end
 
-      private def show_dry_run_details(removing : Array(::Shoo::Notification::Purged)) : Nil
-        puts "\n🔍 #{"[DRY RUN]".colorize.cyan.bold} The following #{removing.size} notifications would be purged:"
-        puts "=" * 80
+      private def show_dry_run_details(io : IO, removing : Array(::Shoo::Notification::Purged)) : Nil
+        io.puts "\n🔍 #{"[DRY RUN]".colorize.cyan.bold} The following #{removing.size} notifications would be purged:"
+        io.puts "=" * 80
 
-        reason_width = max_reason_width(removing)
-        purge_reason_width = max_purge_reason_width(removing)
+        reason_width = Formatting.reason_width(removing)
+        purge_reason_width = Formatting.purge_reason_width(removing)
 
         removing.each_with_index do |notification, index|
-          show_notification_detail(notification, index + 1, reason_width, purge_reason_width)
+          show_notification_detail(io, notification, index + 1, reason_width, purge_reason_width)
         end
 
         # TODO: Make this dynamic based on window size (or just remove it)
-        puts "=" * 80
-        puts "#{"No changes will be made.".colorize.green} Remove `--dry-run` to actually purge."
+        io.puts "=" * 80
+        io.puts "#{"No changes will be made.".colorize.green} Remove `--dry-run` to actually purge."
       end
 
-      private def confirm_purge(count : Int32) : Bool
-        puts "\n⚠️  You are about to purge #{count.to_s.colorize.red.bold} notifications."
-        print "Are you sure? (y/N): "
-        response = gets.try(&.strip.downcase)
+      private def confirm_purge(context : Context, count : Int32) : Bool
+        context.stdout.puts "\n⚠️  You are about to purge #{count.to_s.colorize.red.bold} notifications."
+        context.stdout.print "Are you sure? (y/N): "
+        response = context.stdin.gets.try(&.strip.downcase)
         response == "y" || response == "yes"
       end
 
-      private def perform_purge(config : Config, removing : Array(::Shoo::Notification::Purged), client : GitHub::Client) : Nil
-        puts "🧹 #{"Purging".colorize.red.bold} #{removing.size} notifications..."
+      private def perform_purge(context : Context, removing : Array(::Shoo::Notification::Purged)) : Nil
+        config = context.config
+        io = context.stdout
 
-        notifications_client = client.notifications
+        io.puts "🧹 #{"Purging".colorize.red.bold} #{removing.size} notifications..."
+
+        notifications_client = context.client.notifications
         results = ConcurrentWorker.run(removing) do |notification|
           rules = config.purge_rules_for(notification.repository_name)
 
@@ -133,88 +125,20 @@ module Shoo
         success_count = results.count(true)
         error_count = results.count(false)
 
-        puts "\n✅ Successfully purged #{success_count.to_s.colorize.green.bold} notifications"
+        io.puts "\n✅ Successfully purged #{success_count.to_s.colorize.green.bold} notifications"
         if error_count > 0
-          puts "❌ Failed to purge #{error_count.to_s.colorize.red.bold} notifications"
+          io.puts "❌ Failed to purge #{error_count.to_s.colorize.red.bold} notifications"
         end
       end
 
-      private def fetch_notifications(client : GitHub::Client) : Array(GitHub::Notification)
-        Paginator.paginate do |page, per_page|
-          client.notifications.list(page, per_page).expect!("Error fetching notifications")
-        end
-      end
+      private def show_notification_detail(io : IO, notification : ::Shoo::Notification::Purged, number : Int32, reason_width : Int32, purge_reason_width : Int32) : Nil
+        reason = Formatting.colourised_reason(notification.reason, reason_width)
+        tag = Formatting.colourised_purge_reason(notification.purge_reason, purge_reason_width)
 
-      private def show_keeping_list(notifications : Array(::Shoo::Notification::Kept)) : Nil
-        puts "\n--- KEEPING (#{notifications.size}) ---".colorize.green.bold
-
-        reason_width = max_reason_width(notifications)
-
-        notifications.each do |notification|
-          puts "#{colourised_reason(notification.reason, reason_width)} | #{notification.subject.title}"
-        end
-      end
-
-      private def show_removing_list(notifications : Array(::Shoo::Notification::Purged)) : Nil
-        puts "\n--- REMOVING (#{notifications.size}) ---".colorize.red.bold
-
-        reason_width = max_reason_width(notifications)
-        purge_reason_width = max_purge_reason_width(notifications)
-
-        notifications.each do |notification|
-          reason = colourised_reason(notification.reason, reason_width)
-          tag = colourised_purge_reason(notification.purge_reason, purge_reason_width)
-
-          puts "#{reason} | #{tag} | #{notification.subject.title}"
-        end
-      end
-
-      private def show_notification_detail(notification : ::Shoo::Notification::Purged, number : Int32, reason_width : Int32, purge_reason_width : Int32) : Nil
-        reason = colourised_reason(notification.reason, reason_width)
-        tag = colourised_purge_reason(notification.purge_reason, purge_reason_width)
-
-        puts "#{number.to_s.colorize.white.bold}. [#{reason}] #{tag} | #{notification.subject.title}"
-        puts "   #{"Repository:".colorize.light_gray} #{notification.repository.full_name.colorize.light_cyan}"
-        puts "   #{"ID:".colorize.light_gray} #{notification.id.colorize.light_gray}"
-        puts ""
-      end
-
-      private def max_reason_width(notifications : Array) : Int32
-        notifications.max_of?(&.reason.to_s.size) || 0
-      end
-
-      private def max_purge_reason_width(notifications : Array(::Shoo::Notification::Purged)) : Int32
-        notifications.max_of?(&.purge_reason.to_s.size) || 0
-      end
-
-      private def colourised_purge_reason(reason : PurgeReason, width : Int32) : String
-        padded = reason.to_s.ljust(width)
-
-        case reason
-        in .merged?
-          padded.colorize.light_magenta.to_s
-        in .closed?
-          padded.colorize.red.to_s
-        in .filtered?
-          padded.colorize.dark_gray.to_s
-        end
-      end
-
-      private def colourised_reason(reason : GitHub::NotificationReason, width : Int32)
-        padded = reason.to_s.ljust(width)
-
-        case reason
-        when .ci_activity?
-          padded.colorize.yellow
-        when .review_requested?
-          padded.colorize.magenta
-        when .mention?
-          padded.colorize.green
-        when .comment?
-          padded.colorize.blue
-        else
-          padded.colorize.white
-        end
+        io.puts "#{number.to_s.colorize.white.bold}. [#{reason}] #{tag} | #{notification.subject.title}"
+        io.puts "   #{"Repository:".colorize.light_gray} #{notification.repository.full_name.colorize.light_cyan}"
+        io.puts "   #{"ID:".colorize.light_gray} #{notification.id.colorize.light_gray}"
+        io.puts ""
       end
     end
   end

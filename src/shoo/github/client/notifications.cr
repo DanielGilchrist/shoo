@@ -5,6 +5,21 @@ module Shoo
         def initialize(@request : Request)
         end
 
+        def all(per_page : Int32 = 50) : Array(Notification) | Error
+          notifications = [] of Notification
+          page = 1
+
+          loop do
+            result = list(page, per_page).unwrap_or { |error| return error }
+            notifications.concat(result)
+            break if result.size < per_page
+
+            page += 1
+          end
+
+          notifications
+        end
+
         # https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28&versionId=free-pro-team%40latest&productId=rest#list-notifications-for-the-authenticated-user
         def list(page : Int32 = 1, per_page : Int32 = 50) : Result(Array(Notification))
           @request.get(Array(Notification), "/notifications", query: {

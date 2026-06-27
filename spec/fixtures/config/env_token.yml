@@ -1,0 +1,9 @@
+github:
+  token: "GH_TOKEN"
+
+notifications:
+  purge:
+    global:
+      purge_if:
+        merged:
+          always: true
