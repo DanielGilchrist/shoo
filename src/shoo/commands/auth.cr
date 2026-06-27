@@ -5,7 +5,7 @@ module Shoo
       include Kebab::Parseable
 
       @[Kebab::Subcommand]
-      getter command : Status | Login
+      getter command : Status | Login | Logout
     end
   end
 end
