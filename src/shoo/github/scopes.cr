@@ -19,14 +19,6 @@ module Shoo
         NOTIFICATION_SCOPES.any? { |scope| @names.includes?(scope) }
       end
 
-      def empty? : Bool
-        @names.empty?
-      end
-
-      def to_a : Array(String)
-        @names.to_a
-      end
-
       def to_s(io : IO) : Nil
         io << @names.join(", ")
       end

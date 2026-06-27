@@ -14,14 +14,6 @@ module Shoo
       end
 
       getter value : String
-
-      def to_s(io : IO) : Nil
-        io << "***"
-      end
-
-      def inspect(io : IO) : Nil
-        io << "#<Shoo::GitHub::Token ***>"
-      end
     end
   end
 end
