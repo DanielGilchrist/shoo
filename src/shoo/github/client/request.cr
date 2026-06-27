@@ -24,6 +24,19 @@ module Shoo
           get(type, path)
         end
 
+        def identity(path : String = "/user") : Identity | Error
+          response = HTTP::Client.get(build_uri(path), headers: @headers)
+
+          if response.success?
+            Identity.new(
+              User.from_json(response.body),
+              Scopes.parse(response.headers["X-OAuth-Scopes"]?),
+            )
+          else
+            Error.from_json(response.body)
+          end
+        end
+
         def delete(path : String) : Bool
           response = HTTP::Client.delete("#{BASE_URL}#{path}", headers: @headers)
           response.success?

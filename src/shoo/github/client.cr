@@ -24,6 +24,10 @@ module Shoo
       def teams : Teams
         Teams.new(@request)
       end
+
+      def user : Users
+        Users.new(@request)
+      end
     end
   end
 end
