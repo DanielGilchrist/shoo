@@ -18,6 +18,8 @@ module Shoo
         getter token : String?
 
         def run(context : Context) : Nil
+          warn_if_shadowed(context)
+
           if provided = token
             parsed = GitHub::Token.parse?(provided)
             return context.abort!("The provided token is blank.") unless parsed
@@ -35,6 +37,17 @@ module Shoo
           in Method::EnvVar     then explain_environment_variable(io)
           in Nil                then io.puts "  No method selected."
           end
+        end
+
+        private def warn_if_shadowed(context : Context) : Nil
+          active = context.token_source
+          return unless active
+          return if active.from_stored_credential?
+
+          io = context.stdout
+          io.puts "  #{"⚠".colorize.yellow} shoo is already using #{active.describe}, which takes precedence."
+          io.puts "    This login won't take effect until you unset it."
+          io.puts
         end
 
         private def available_methods(context : Context) : Array(Method)

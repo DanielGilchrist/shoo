@@ -69,6 +69,20 @@ describe Shoo::Commands::Auth::Login do
     result.stdout.to_s.should contain("export SHOO_GITHUB_TOKEN")
   end
 
+  it "warns when an environment variable will shadow the login" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "notifications")
+    end
+
+    result = run(
+      ["auth", "login", "--token", "ghp_new"],
+      config_fixture: "no_token",
+      env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
+    )
+
+    result.stdout.to_s.should contain("takes precedence")
+  end
+
   it "aborts when a pasted token verification fails" do
     APIStub::GitHub.stub do
       user.identity(status: 401)

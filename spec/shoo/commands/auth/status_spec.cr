@@ -24,6 +24,26 @@ describe Shoo::Commands::Auth::Status do
     result.stdout.to_s.should contain("environment variable $SHOO_GITHUB_TOKEN")
   end
 
+  it "flags when an env var overrides a stored credential" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat")
+    end
+
+    path = File.tempname("shoo-cred")
+    Shoo::Credential::Gh.new.save(path)
+
+    result = run(
+      ["auth", "status"],
+      config_fixture: "no_token",
+      env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
+      credentials_path: path,
+    )
+
+    result.stdout.to_s.should contain("a stored credential exists")
+  ensure
+    File.delete(path) if path && File.exists?(path)
+  end
+
   it "reports when not logged in" do
     result = run(["auth", "status"], config_fixture: "no_token")
 

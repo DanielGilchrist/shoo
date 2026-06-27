@@ -11,16 +11,20 @@ module Shoo
 
           case identity = context.client.user.identity
           in GitHub::Identity
-            render(context.stdout, source, identity)
+            render(context.stdout, source, identity, context.credential)
           in GitHub::Error
             context.abort!("Could not verify token: #{identity.message}")
           end
         end
 
-        private def render(io : IO, source : TokenSource, identity : GitHub::Identity) : Nil
+        private def render(io : IO, source : TokenSource, identity : GitHub::Identity, credential : Credential?) : Nil
           io.puts "#{"✓".colorize.green} Logged in to github.com as #{"@#{identity.user.login}".colorize.bold}"
           io.puts "  via     #{source.describe}"
           io.puts "  scopes  #{identity.scopes}"
+
+          if credential && !source.from_stored_credential?
+            io.puts "  #{"note".colorize.yellow}    a stored credential exists, but #{source.describe} takes precedence"
+          end
         end
       end
     end
