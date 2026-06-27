@@ -1,6 +1,6 @@
 module Shoo
   class Config
-    def self.load(path : String = Raw::CONFIG_PATH, env : Env = Env.system) : Config | Array(Error)
+    def self.load(path : String = Raw::CONFIG_PATH, env : Env = Env.load) : Config | Array(Error)
       raw = Raw.load(path)
 
       notifications = Notifications.parse(raw.notifications)

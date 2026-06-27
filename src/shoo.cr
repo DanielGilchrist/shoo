@@ -26,7 +26,7 @@ module Shoo
     stdout : IO = STDOUT,
     stderr : IO = STDERR,
     config_path : String = Config::Raw::CONFIG_PATH,
-    env : Env = Env.system,
+    env : Env = Env.load,
   ) : Context
     context = build_context(config_path, env, stdin, stdout, stderr)
     dispatch(args, context)
