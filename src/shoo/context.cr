@@ -1,20 +1,30 @@
 module Shoo
   class Context
     getter config : Config
+    getter credential : Credential?
+    getter gh : GhCli?
+    getter credentials_path : String
+    getter token_source : TokenSource?
     getter stdout : IO
     getter stderr : IO
     getter stdin : IO
 
-    def initialize(@config : Config, @client : GitHub::Client?, @stdout : IO, @stderr : IO, @stdin : IO)
+    def initialize(@config, @credential, @gh, @credentials_path, @token_source, @stdout, @stderr, @stdin)
     end
 
+    @client : GitHub::Client?
+
     def client : GitHub::Client
-      @client || abort!("GitHub token not provided!")
+      @client ||= GitHub::Client.new(authenticated_source.token)
     end
 
     def abort!(message : String) : NoReturn
       @stderr.puts message
       raise ExitProgram.new(1)
+    end
+
+    private def authenticated_source : TokenSource
+      @token_source || abort!("Not authenticated. Run `shoo auth login`.")
     end
   end
 end

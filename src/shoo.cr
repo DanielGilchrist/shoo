@@ -26,16 +26,18 @@ module Shoo
     stdout : IO = STDOUT,
     stderr : IO = STDERR,
     config_path : String = Config::Raw::CONFIG_PATH,
+    credentials_path : String = Credential::PATH,
     env : Env = Env.load,
+    gh : GhCli? = GhCli.detect,
   ) : Context
-    context = build_context(config_path, env, stdin, stdout, stderr)
+    context = build_context(config_path, credentials_path, env, gh, stdin, stdout, stderr)
     dispatch(args, context)
     context
   end
 
-  private def build_context(config_path : String, env : Env, stdin : IO, stdout : IO, stderr : IO) : Context
+  private def build_context(config_path : String, credentials_path : String, env : Env, gh : GhCli?, stdin : IO, stdout : IO, stderr : IO) : Context
     config =
-      case loaded = Config.load(config_path, env)
+      case loaded = Config.load(config_path)
       in Config
         loaded
       in Array(Config::Error)
@@ -44,14 +46,10 @@ module Shoo
         raise ExitProgram.new(1)
       end
 
-    Context.new(config, build_client(config), stdout, stderr, stdin)
-  end
+    credential = Credential.load(credentials_path)
+    source = config.github.token_source(env) || credential.try(&.token_source(gh))
 
-  private def build_client(config : Config) : GitHub::Client?
-    token = config.github.token
-    return unless token
-
-    GitHub::Client.new(token)
+    Context.new(config, credential, gh, credentials_path, source, stdout, stderr, stdin)
   end
 
   private def dispatch(args : Array(String), context : Context) : Nil

@@ -14,6 +14,8 @@ def run(
   config_fixture : String = "default",
   env : Hash(String, String) = {} of String => String,
   stdin : IO = IO::Memory.new,
+  gh : Shoo::GhCli? = nil,
+  credentials_path : String = File.tempname("shoo-credentials"),
 ) : RunResult
   stdout = IO::Memory.new
   stderr = IO::Memory.new
@@ -26,7 +28,9 @@ def run(
         stdout: stdout,
         stderr: stderr,
         config_path: "#{CONFIG_FIXTURE_PATH}/#{config_fixture}.yml",
+        credentials_path: credentials_path,
         env: Shoo::Env.new(env),
+        gh: gh,
       )
     rescue Shoo::ExitProgram
       nil

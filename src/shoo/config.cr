@@ -1,12 +1,12 @@
 module Shoo
   class Config
-    def self.load(path : String = Raw::CONFIG_PATH, env : Env = Env.load) : Config | Array(Error)
+    def self.load(path : String = Raw::CONFIG_PATH) : Config | Array(Error)
       raw = Raw.load(path)
 
       notifications = Notifications.parse(raw.notifications)
       return notifications if notifications.is_a?(Array(Error))
 
-      github = Github.parse(raw.github, env)
+      github = Github.parse(raw.github)
 
       new(notifications, github)
     end
