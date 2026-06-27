@@ -3,13 +3,13 @@ module Shoo
     getter config : Config
     getter credential : Credential?
     getter gh : GhCli?
-    getter credentials_path : String
+    getter credential_store : CredentialStore
     getter token_source : TokenSource?
     getter stdout : IO
     getter stderr : IO
     getter stdin : IO
 
-    def initialize(@config, @credential, @gh, @credentials_path, @token_source, @stdout, @stderr, @stdin)
+    def initialize(@config, @credential, @gh, @credential_store, @token_source, @stdout, @stderr, @stdin)
     end
 
     @client : GitHub::Client?

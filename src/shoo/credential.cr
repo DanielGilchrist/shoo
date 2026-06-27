@@ -1,32 +1,29 @@
 module Shoo
   abstract struct Credential
-    PATH = "#{Path.home}/.config/shoo/credentials"
+    def self.gh : Gh
+      Gh.new
+    end
 
-    def self.load(path : String = PATH) : Credential?
-      return unless File.exists?(path)
+    def self.stored(token : GitHub::Token) : Stored
+      Stored.new(token)
+    end
 
-      parse(Raw.from_yaml(File.read(path)))
+    def self.parse(raw : String) : Credential?
+      data = Raw.from_yaml(raw)
+
+      case data.provider
+      when "gh"
+        Gh.new
+      when "token"
+        token = GitHub::Token.parse?(data.token)
+        Stored.new(token) if token
+      end
     rescue YAML::ParseException
       nil
     end
 
-    def self.parse(raw : Raw) : Credential?
-      case raw.provider
-      when "gh"
-        Gh.new
-      when "token"
-        token = GitHub::Token.parse?(raw.token)
-        Stored.new(token) if token
-      end
-    end
-
     abstract def to_raw : Raw
     abstract def token_source(gh : GhCli?) : TokenSource?
-
-    def save(path : String = PATH) : Nil
-      Dir.mkdir_p(File.dirname(path))
-      File.write(path, to_raw.to_yaml, perm: 0o600)
-    end
 
     struct Raw
       include YAML::Serializable

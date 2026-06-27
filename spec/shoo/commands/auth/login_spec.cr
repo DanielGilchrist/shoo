@@ -6,13 +6,10 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    path = File.tempname("shoo-cred")
-    result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token", credentials_path: path)
+    result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
-  ensure
-    File.delete(path) if path && File.exists?(path)
+    result.credential.should be_a(Shoo::Credential::Stored)
   end
 
   it "logs in through the gh CLI" do
@@ -20,16 +17,13 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    path = File.tempname("shoo-cred")
     gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
-    result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: "no_token", credentials_path: path)
+    result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: "no_token")
 
     output = result.stdout.to_s
     output.should contain("GitHub CLI (gh)")
     output.should contain("Connected as @octocat")
-    Shoo::Credential.load(path).should be_a(Shoo::Credential::Gh)
-  ensure
-    File.delete(path) if path && File.exists?(path)
+    result.credential.should be_a(Shoo::Credential::Gh)
   end
 
   it "offers to add the notifications scope when gh lacks it" do
@@ -37,16 +31,13 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "read:org")
     end
 
-    path = File.tempname("shoo-cred")
     gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
-    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token", credentials_path: path)
+    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token")
 
     output = result.stdout.to_s
     output.should contain("lacks the `notifications` scope")
     gh.refreshed.should contain("notifications")
     output.should contain("Connected as @octocat")
-  ensure
-    File.delete(path) if path && File.exists?(path)
   end
 
   it "logs in with a pasted token" do
@@ -54,13 +45,10 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    path = File.tempname("shoo-cred")
-    result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token", credentials_path: path)
+    result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
-  ensure
-    File.delete(path) if path && File.exists?(path)
+    result.credential.should be_a(Shoo::Credential::Stored)
   end
 
   it "explains the environment variable option" do

@@ -6,13 +6,13 @@ module Shoo
         include Kebab::Parseable
 
         def run(context : Context) : Nil
-          path = context.credentials_path
+          store = context.credential_store
 
-          unless File.exists?(path)
+          unless store.present?
             return context.stdout.puts("No stored credentials to remove.")
           end
 
-          File.delete(path)
+          store.clear
           context.stdout.puts "#{"✓".colorize.green} Removed shoo's stored credentials. Your gh login is untouched."
         end
       end

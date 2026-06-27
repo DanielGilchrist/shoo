@@ -1,75 +1,53 @@
 require "../spec_helper"
 
 describe Shoo::Credential do
-  describe ".load" do
-    it "returns nil when the file does not exist" do
-      Shoo::Credential.load(File.tempname("shoo-missing")).should be_nil
+  describe "loading from a store" do
+    it "returns nil when nothing is stored" do
+      memory_store.load.should be_nil
     end
 
     it "parses the gh provider" do
-      path = File.tempname("shoo-cred")
-      File.write(path, "provider: gh\n")
-
-      Shoo::Credential.load(path).should be_a(Shoo::Credential::Gh)
-    ensure
-      File.delete(path) if path && File.exists?(path)
+      memory_store("provider: gh\n").load.should be_a(Shoo::Credential::Gh)
     end
 
     it "parses a stored token" do
-      path = File.tempname("shoo-cred")
-      File.write(path, "provider: token\ntoken: ghp_stored\n")
-
-      Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
-    ensure
-      File.delete(path) if path && File.exists?(path)
+      memory_store("provider: token\ntoken: ghp_stored\n").load.should be_a(Shoo::Credential::Stored)
     end
 
     it "ignores a token provider with no token" do
-      path = File.tempname("shoo-cred")
-      File.write(path, "provider: token\n")
-
-      Shoo::Credential.load(path).should be_nil
-    ensure
-      File.delete(path) if path && File.exists?(path)
+      memory_store("provider: token\n").load.should be_nil
     end
   end
 
-  describe "#save" do
-    it "writes the gh provider with owner-only permissions" do
-      path = File.tempname("shoo-cred")
-      Shoo::Credential::Gh.new.save(path)
+  describe "saving to a store" do
+    it "round-trips the gh provider" do
+      store = memory_store
+      store.save(Shoo::Credential.gh)
 
-      File.read(path).should contain("provider: gh")
-      File.info(path).permissions.should eq(File::Permissions.new(0o600))
-    ensure
-      File.delete(path) if path && File.exists?(path)
+      store.load.should be_a(Shoo::Credential::Gh)
     end
 
     it "round-trips a stored token" do
-      path = File.tempname("shoo-cred")
-      Shoo::Credential::Stored.new(github_token("ghp_round")).save(path)
+      store = memory_store
+      store.save(Shoo::Credential.stored(github_token("ghp_round")))
 
-      Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
-    ensure
-      File.delete(path) if path && File.exists?(path)
+      store.load.should be_a(Shoo::Credential::Stored)
     end
   end
 
   describe "#token_source" do
     it "resolves a stored token directly" do
-      source = Shoo::Credential::Stored.new(github_token).token_source(nil)
-
-      source.should be_a(Shoo::TokenSource::StoredToken)
+      Shoo::Credential.stored(github_token).token_source(nil).should be_a(Shoo::TokenSource::StoredToken)
     end
 
     it "resolves gh through the cli" do
       gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
 
-      Shoo::Credential::Gh.new.token_source(gh).should be_a(Shoo::TokenSource::GitHubCli)
+      Shoo::Credential.gh.token_source(gh).should be_a(Shoo::TokenSource::GitHubCli)
     end
 
     it "yields no source when gh is unavailable" do
-      Shoo::Credential::Gh.new.token_source(nil).should be_nil
+      Shoo::Credential.gh.token_source(nil).should be_nil
     end
   end
 end

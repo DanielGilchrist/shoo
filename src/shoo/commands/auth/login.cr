@@ -102,7 +102,7 @@ module Shoo
           identity = verify!(context, token)
           ensure_gh_scope(context, gh, identity)
 
-          Credential::Gh.new.save(context.credentials_path)
+          context.credential_store.save(Credential.gh)
           report_success(context, identity)
         end
 
@@ -134,7 +134,7 @@ module Shoo
             context.stdout.puts "  Create one with that scope at #{TOKEN_URL.colorize.blue}"
           end
 
-          Credential::Stored.new(token).save(context.credentials_path)
+          context.credential_store.save(Credential.stored(token))
           report_success(context, identity)
         end
 

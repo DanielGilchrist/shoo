@@ -26,16 +26,16 @@ module Shoo
     stdout : IO = STDOUT,
     stderr : IO = STDERR,
     config_path : String = Config::Raw::CONFIG_PATH,
-    credentials_path : String = Credential::PATH,
+    credential_store : CredentialStore = CredentialStore::OnDisk.new,
     env : Env = Env.load,
     gh : GhCli? = GhCli.detect,
   ) : Context
-    context = build_context(config_path, credentials_path, env, gh, stdin, stdout, stderr)
+    context = build_context(config_path, credential_store, env, gh, stdin, stdout, stderr)
     dispatch(args, context)
     context
   end
 
-  private def build_context(config_path : String, credentials_path : String, env : Env, gh : GhCli?, stdin : IO, stdout : IO, stderr : IO) : Context
+  private def build_context(config_path : String, credential_store : CredentialStore, env : Env, gh : GhCli?, stdin : IO, stdout : IO, stderr : IO) : Context
     config =
       case loaded = Config.load(config_path)
       in Config
@@ -46,10 +46,10 @@ module Shoo
         raise ExitProgram.new(1)
       end
 
-    credential = Credential.load(credentials_path)
+    credential = credential_store.load
     source = config.github.token_source(env) || credential.try(&.token_source(gh))
 
-    Context.new(config, credential, gh, credentials_path, source, stdout, stderr, stdin)
+    Context.new(config, credential, gh, credential_store, source, stdout, stderr, stdin)
   end
 
   private def dispatch(args : Array(String), context : Context) : Nil

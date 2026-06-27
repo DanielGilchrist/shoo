@@ -29,21 +29,16 @@ describe Shoo::Commands::Auth::Status do
       user.identity(login: "octocat")
     end
 
-    path = File.tempname("shoo-cred")
-    Shoo::Credential::Gh.new.save(path)
-
     result = run(
       ["auth", "status"],
       config_fixture: "no_token",
       env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
-      credentials_path: path,
+      credential: gh_credential,
     )
 
     output = result.stdout.to_s
     output.should contain("overrides a stored credential")
     output.should contain("shoo auth logout")
-  ensure
-    File.delete(path) if path && File.exists?(path)
   end
 
   it "reports when not logged in" do
