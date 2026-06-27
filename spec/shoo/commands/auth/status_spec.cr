@@ -39,7 +39,9 @@ describe Shoo::Commands::Auth::Status do
       credentials_path: path,
     )
 
-    result.stdout.to_s.should contain("a stored credential exists")
+    output = result.stdout.to_s
+    output.should contain("overrides a stored credential")
+    output.should contain("shoo auth logout")
   ensure
     File.delete(path) if path && File.exists?(path)
   end

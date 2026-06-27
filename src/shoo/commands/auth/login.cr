@@ -46,7 +46,7 @@ module Shoo
 
           io = context.stdout
           io.puts "  #{"⚠".colorize.yellow} shoo is already using #{active.describe}, which takes precedence."
-          io.puts "    This login won't take effect until you unset it."
+          io.puts "    Unset it to use this login — or keep the variable and skip logging in."
           io.puts
         end
 
