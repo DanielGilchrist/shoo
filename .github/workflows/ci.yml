@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    container: crystallang/crystal:1.20.0
+
+    env:
+      CRYSTAL_CACHE_DIR: ${{ github.workspace }}/.crystal-cache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: lib
+          key: shards-${{ hashFiles('shard.lock', 'shard.yml') }}
+
+      - name: Install dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: shards install
+
+      - name: Cache compiler objects
+        uses: actions/cache@v4
+        with:
+          path: .crystal-cache
+          key: crystal-${{ hashFiles('shard.lock', 'shard.yml') }}-${{ github.sha }}
+          restore-keys: |
+            crystal-${{ hashFiles('shard.lock', 'shard.yml') }}-
+
+      - name: Check formatting
+        run: crystal tool format --check src spec
+
+      - name: Lint
+        run: lib/ameba/bin/ameba src spec
+
+      - name: Unreachable code
+        run: crystal tool unreachable --check src/main.cr
+
+      - name: Run specs
+        run: crystal spec

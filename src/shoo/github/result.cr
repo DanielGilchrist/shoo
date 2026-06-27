@@ -10,10 +10,6 @@ module Shoo
       def initialize(@value : T | E)
       end
 
-      def value : T | E
-        @value
-      end
-
       def ok? : T?
         unwrap_or(nil)
       end
