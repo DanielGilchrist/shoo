@@ -4,7 +4,7 @@ module Shoo
       GITHUB_TOKEN_PREFIX = "ghp_"
 
       def self.parse(raw : Raw::Github, env : Env) : Github
-        new(resolve_token(raw.config_token, env))
+        new(GitHub::Token.parse?(resolve_token(raw.config_token, env)))
       end
 
       private def self.resolve_token(config_token : String?, env : Env) : String?
@@ -15,10 +15,10 @@ module Shoo
         end
       end
 
-      private def initialize(@token : String?)
+      private def initialize(@token : GitHub::Token?)
       end
 
-      getter token : String?
+      getter token : GitHub::Token?
     end
   end
 end

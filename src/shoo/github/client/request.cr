@@ -10,7 +10,7 @@ module Shoo
         GITHUB_HOST = "api.github.com"
         BASE_URL    = "#{HTTPS}://#{GITHUB_HOST}"
 
-        def initialize(token : String)
+        def initialize(token : Token)
           @headers = build_headers(token)
         end
 
@@ -34,9 +34,9 @@ module Shoo
           URI.new(HTTPS, GITHUB_HOST, path: path, query: params)
         end
 
-        private def build_headers(token : String) : HTTP::Headers
+        private def build_headers(token : Token) : HTTP::Headers
           HTTP::Headers{
-            "Authorization"        => "Bearer #{token}",
+            "Authorization"        => "Bearer #{token.value}",
             "X-GitHub-Api-Version" => "2022-11-28",
           }
         end

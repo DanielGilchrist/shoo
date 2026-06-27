@@ -49,7 +49,7 @@ module Shoo
 
   private def build_client(config : Config) : GitHub::Client?
     token = config.github.token
-    return if token.nil? || token.blank?
+    return unless token
 
     GitHub::Client.new(token)
   end
