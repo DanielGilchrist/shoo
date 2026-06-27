@@ -1,0 +1,81 @@
+require "../../../spec_helper"
+
+describe Shoo::Commands::Auth::Login do
+  it "logs in with a token provided non-interactively" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "notifications")
+    end
+
+    path = File.tempname("shoo-cred")
+    result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token", credentials_path: path)
+
+    result.stdout.to_s.should contain("Connected as @octocat")
+    Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
+  ensure
+    File.delete(path) if path && File.exists?(path)
+  end
+
+  it "logs in through the gh CLI" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "notifications")
+    end
+
+    path = File.tempname("shoo-cred")
+    gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
+    result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: "no_token", credentials_path: path)
+
+    output = result.stdout.to_s
+    output.should contain("GitHub CLI (gh)")
+    output.should contain("Connected as @octocat")
+    Shoo::Credential.load(path).should be_a(Shoo::Credential::Gh)
+  ensure
+    File.delete(path) if path && File.exists?(path)
+  end
+
+  it "offers to add the notifications scope when gh lacks it" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "read:org")
+    end
+
+    path = File.tempname("shoo-cred")
+    gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
+    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token", credentials_path: path)
+
+    output = result.stdout.to_s
+    output.should contain("lacks the `notifications` scope")
+    gh.refreshed.should contain("notifications")
+    output.should contain("Connected as @octocat")
+  ensure
+    File.delete(path) if path && File.exists?(path)
+  end
+
+  it "logs in with a pasted token" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "notifications")
+    end
+
+    path = File.tempname("shoo-cred")
+    result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token", credentials_path: path)
+
+    result.stdout.to_s.should contain("Connected as @octocat")
+    Shoo::Credential.load(path).should be_a(Shoo::Credential::Stored)
+  ensure
+    File.delete(path) if path && File.exists?(path)
+  end
+
+  it "explains the environment variable option" do
+    result = run(["auth", "login"], stdin: build_stdin("2"), config_fixture: "no_token")
+
+    result.stdout.to_s.should contain("export SHOO_GITHUB_TOKEN")
+  end
+
+  it "aborts when a pasted token verification fails" do
+    APIStub::GitHub.stub do
+      user.identity(status: 401)
+    end
+
+    result = run(["auth", "login", "--token", "ghp_bad"], config_fixture: "no_token")
+
+    result.stderr.to_s.should contain("Could not verify token")
+  end
+end
