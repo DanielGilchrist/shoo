@@ -23,6 +23,10 @@ def gh_credential : Shoo::Credential
   Shoo::Credential.gh
 end
 
+def token_credential(value : String = "ghp_test") : Shoo::Credential
+  Shoo::Credential.stored(github_token(value))
+end
+
 def memory_store(content : String? = nil) : Shoo::CredentialStore::InMemory
   Shoo::CredentialStore::InMemory.new(content)
 end

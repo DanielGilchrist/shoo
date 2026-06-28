@@ -10,7 +10,7 @@ module Shoo
         Raw.new(provider: "token", token: @token.value)
       end
 
-      def token_source(gh : GhCli?) : TokenSource?
+      def token_source : TokenSource
         TokenSource::StoredToken.new(@token)
       end
     end

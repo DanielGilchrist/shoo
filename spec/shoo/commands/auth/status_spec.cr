@@ -41,6 +41,33 @@ describe Shoo::Commands::Auth::Status do
     output.should contain("shoo auth logout")
   end
 
+  it "resolves a stored gh credential through the cli" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat")
+    end
+
+    gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
+    result = run(["auth", "status"], config_fixture: "no_token", credential: gh_credential, gh: gh)
+
+    result.stdout.to_s.should contain("GitHub CLI (gh)")
+  end
+
+  it "resolves a stored token credential" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat")
+    end
+
+    result = run(["auth", "status"], config_fixture: "no_token", credential: token_credential)
+
+    result.stdout.to_s.should contain("stored token")
+  end
+
+  it "is not logged in when a gh credential has no cli available" do
+    result = run(["auth", "status"], config_fixture: "no_token", credential: gh_credential, gh: nil)
+
+    result.stdout.to_s.should contain("Not logged in")
+  end
+
   it "reports when not logged in" do
     result = run(["auth", "status"], config_fixture: "no_token")
 

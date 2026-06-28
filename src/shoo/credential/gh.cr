@@ -5,9 +5,8 @@ module Shoo
         Raw.new(provider: "gh")
       end
 
-      def token_source(gh : GhCli?) : TokenSource?
-        token = gh.try(&.token)
-        TokenSource::GitHubCli.new(token) if token
+      def token_source(token : GitHub::Token) : TokenSource
+        TokenSource::GitHubCli.new(token)
       end
     end
   end

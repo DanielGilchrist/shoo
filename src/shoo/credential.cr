@@ -23,7 +23,6 @@ module Shoo
     end
 
     abstract def to_raw : Raw
-    abstract def token_source(gh : GhCli?) : TokenSource?
 
     struct Raw
       include YAML::Serializable

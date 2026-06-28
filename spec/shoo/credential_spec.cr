@@ -36,18 +36,12 @@ describe Shoo::Credential do
   end
 
   describe "#token_source" do
-    it "resolves a stored token directly" do
-      Shoo::Credential.stored(github_token).token_source(nil).should be_a(Shoo::TokenSource::StoredToken)
+    it "builds a stored-token source" do
+      Shoo::Credential.stored(github_token).token_source.should be_a(Shoo::TokenSource::StoredToken)
     end
 
-    it "resolves gh through the cli" do
-      gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
-
-      Shoo::Credential.gh.token_source(gh).should be_a(Shoo::TokenSource::GitHubCli)
-    end
-
-    it "yields no source when gh is unavailable" do
-      Shoo::Credential.gh.token_source(nil).should be_nil
+    it "builds a gh source from a token" do
+      Shoo::Credential.gh.token_source(github_token).should be_a(Shoo::TokenSource::GitHubCli)
     end
   end
 end
