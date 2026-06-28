@@ -125,8 +125,95 @@ describe Shoo::Commands::List do
 
     output = result.stdout.to_s
     output.should contain("REMOVING (1)")
-    output.should contain("Merged")
+    output.should contain("Why purged")
+    output.should contain("merged")
     output.should contain("A merged pull request")
+  end
+
+  it "shows the trigger for a default-purged notification" do
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
+          subject: pull_request(merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"])
+
+    output = result.stdout.to_s
+    output.should contain("REMOVING (1)")
+    output.should contain("review requested → not kept")
+    output.should contain("Unrelated PR")
+  end
+
+  it "keeps a pull request authored by a configured author and shows why" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              authors: ["octocat"]
+      YAML
+
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "My own PR", repo: "org/repo",
+          subject: pull_request(author: "octocat", merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("author: octocat")
+    output.should contain("My own PR")
+  end
+
+  it "keeps a pull request whose requested team is configured and names the team" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              requested_teams: ["core-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Team review", repo: "org/repo",
+          subject: pull_request(author: "someone", merged: false, state: "open", requested_teams: ["core-team"])),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("review requested: core-team")
+    output.should contain("Team review")
+  end
+
+  it "shows the keep reason for an always-kept notification" do
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "comment", title: "Fixed a bug", repo: "org/repo"),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"])
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("Why kept")
+    output.should contain("you commented")
+    output.should contain("Fixed a bug")
   end
 
   it "errors when no GitHub token is configured" do

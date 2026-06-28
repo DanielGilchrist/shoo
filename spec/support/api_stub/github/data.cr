@@ -30,12 +30,13 @@ module APIStub
 
       def pull_request(merged = true, title = "A pull request", author = "octocat",
                        state = "closed", merged_at : String? = "2020-01-01T00:00:00Z",
-                       closed_at : String? = "2020-01-01T00:00:00Z")
+                       closed_at : String? = "2020-01-01T00:00:00Z",
+                       requested_teams : Array(String) = [] of String)
         body = {
           user:                {login: author},
           title:               title,
           state:               state,
-          requested_teams:     [] of String,
+          requested_teams:     requested_teams.map { |slug| {slug: slug} },
           review_comments_url: "https://api.github.com/repos/org/repo/pulls/1/comments",
           comments_url:        "https://api.github.com/repos/org/repo/issues/1/comments",
           merged:              merged,

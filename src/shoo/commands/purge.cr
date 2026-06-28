@@ -86,8 +86,8 @@ module Shoo
         io.puts "\n🔍 #{"[DRY RUN]".colorize.cyan.bold} The following #{removing.size} notifications would be purged:"
         io.puts "=" * 80
 
-        reason_width = Formatting.reason_width(removing)
-        purge_reason_width = Formatting.purge_reason_width(removing)
+        reason_width = removing.max_of?(&.reason.to_s.size) || 0
+        purge_reason_width = removing.max_of?(&.purge_reason.label.size) || 0
 
         removing.each_with_index do |notification, index|
           show_notification_detail(io, notification, index + 1, reason_width, purge_reason_width)
@@ -132,8 +132,8 @@ module Shoo
       end
 
       private def show_notification_detail(io : IO, notification : ::Shoo::Notification::Purged, number : Int32, reason_width : Int32, purge_reason_width : Int32) : Nil
-        reason = Formatting.colourised_reason(notification.reason, reason_width)
-        tag = Formatting.colourised_purge_reason(notification.purge_reason, purge_reason_width)
+        reason = notification.reason.colourise(reason_width)
+        tag = notification.purge_reason.colourise(purge_reason_width)
 
         io.puts "#{number.to_s.colorize.white.bold}. [#{reason}] #{tag} | #{notification.subject.title}"
         io.puts "   #{"Repository:".colorize.light_gray} #{notification.repository.full_name.colorize.light_cyan}"

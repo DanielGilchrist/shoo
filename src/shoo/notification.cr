@@ -13,7 +13,9 @@ module Shoo
     struct Kept
       include Base
 
-      def initialize(@github_notification : GitHub::Notification)
+      getter keep_reason : KeepReason
+
+      def initialize(@github_notification : GitHub::Notification, @keep_reason : KeepReason)
       end
     end
 

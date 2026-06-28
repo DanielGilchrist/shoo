@@ -27,17 +27,16 @@ module Shoo
 
     def filter : Array(Notification::Any)
       @github_notifications.map do |github_notification|
-        purge_reason = purge_reason_for(github_notification)
-
-        if purge_reason
-          Notification::Purged.new(github_notification, purge_reason)
-        else
-          Notification::Kept.new(github_notification)
+        case verdict = verdict_for(github_notification)
+        in KeepReason
+          Notification::Kept.new(github_notification, verdict)
+        in PurgeReason
+          Notification::Purged.new(github_notification, verdict)
         end
       end
     end
 
-    private def purge_reason_for(github_notification : GitHub::Notification) : PurgeReason?
+    private def verdict_for(github_notification : GitHub::Notification) : KeepReason | PurgeReason
       rules = @config.purge_rules_for(github_notification.repository.full_name)
       subject = fetch_subject(github_notification)
 
@@ -49,17 +48,27 @@ module Shoo
         end
       end
 
-      return if always_keep?(github_notification)
+      return KeepReason::AlwaysKept.new(github_notification.reason) if always_keep?(github_notification)
       return PurgeReason::Filtered unless subject
 
       keep_rules = rules.keep_if
 
-      return if keep_rules.mentioned? && github_notification.reason.mention?
+      return KeepReason::Mentioned.new if keep_rules.mentioned? && github_notification.reason.mention?
 
       author = subject.user.login
-      return if author_in_teams?(author, github_notification, keep_rules)
-      return if subject.is_a?(GitHub::PullRequest) && requested_teams?(subject, keep_rules)
-      return if team_mentioned?(subject, github_notification, keep_rules)
+      return KeepReason::Author.new(author) if keep_rules.authors.includes?(author)
+
+      if team = matched_author_team(author, github_notification, keep_rules)
+        return KeepReason::AuthorInTeam.new(team)
+      end
+
+      if subject.is_a?(GitHub::PullRequest) && (team = matched_requested_team(subject, keep_rules))
+        return KeepReason::RequestedTeam.new(team)
+      end
+
+      if team = matched_mentioned_team(subject, github_notification, keep_rules)
+        return KeepReason::MentionedTeam.new(team)
+      end
 
       PurgeReason::Filtered
     end
@@ -118,13 +127,13 @@ module Shoo
       end
     end
 
-    private def author_in_teams?(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
+    private def matched_author_team(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String?
       team_slugs = keep_rules.author_in_teams
-      return false if team_slugs.empty?
+      return if team_slugs.empty?
 
       organisation_name = github_notification.repository.organisation_name
 
-      team_slugs.any? do |team_slug|
+      matched = team_slugs.find do |team_slug|
         slug_value = team_slug.value
 
         members = @team_cache.fetch(organisation_name, slug_value) do
@@ -133,32 +142,35 @@ module Shoo
 
         members.any? { |member| member.login == author }
       end
+
+      matched.try(&.value)
     end
 
-    private def requested_teams?(pull_request : GitHub::PullRequest, keep_rules : KeepIfRules) : Bool
-      teams = pull_request.requested_teams
-      team_slugs = keep_rules.requested_teams
-
-      teams.any? do |team|
-        team_slugs.any? { |team_slug| team_slug == team.slug }
+    private def matched_requested_team(pull_request : GitHub::PullRequest, keep_rules : KeepIfRules) : String?
+      matched = keep_rules.requested_teams.find do |team_slug|
+        pull_request.requested_teams.any? { |team| team_slug == team.slug }
       end
+
+      matched.try(&.value)
     end
 
-    private def team_mentioned?(subject : Subject, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
-      return false unless github_notification.reason.team_mention?
+    private def matched_mentioned_team(subject : Subject, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String?
+      return unless github_notification.reason.team_mention?
 
       mentioned_team_slugs = keep_rules.mentioned_teams
-      return false if mentioned_team_slugs.empty?
+      return if mentioned_team_slugs.empty?
 
       organisation_name = github_notification.repository.organisation_name
       comments = comments_by_url[github_notification.subject.url]?
-      return false if comments.nil? || comments.empty?
+      return if comments.nil? || comments.empty?
 
-      mentioned_team_slugs.any? do |team_slug|
+      matched = mentioned_team_slugs.find do |team_slug|
         comments.any? do |comment|
           contains_team_mention?(comment.body, organisation_name, team_slug.value)
         end
       end
+
+      matched.try(&.value)
     end
 
     private def always_keep?(github_notification : GitHub::Notification) : Bool
