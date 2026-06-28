@@ -33,7 +33,7 @@ describe Shoo::Commands::Auth::Status do
       ["auth", "status"],
       config_fixture: "no_token",
       env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
-      credential: gh_credential,
+      credential: github_cli_credential,
     )
 
     output = result.stdout.to_s
@@ -46,8 +46,8 @@ describe Shoo::Commands::Auth::Status do
       user.identity(login: "octocat")
     end
 
-    gh = Shoo::GhCli::Fake.new(token: github_token("ghp_gh"))
-    result = run(["auth", "status"], config_fixture: "no_token", credential: gh_credential, gh: gh)
+    gh = Shoo::GitHubCLIMock.new(token: github_token("ghp_gh"))
+    result = run(["auth", "status"], config_fixture: "no_token", credential: github_cli_credential, gh: gh)
 
     result.stdout.to_s.should contain("GitHub CLI (gh)")
   end
@@ -63,7 +63,7 @@ describe Shoo::Commands::Auth::Status do
   end
 
   it "is not logged in when a gh credential has no cli available" do
-    result = run(["auth", "status"], config_fixture: "no_token", credential: gh_credential, gh: nil)
+    result = run(["auth", "status"], config_fixture: "no_token", credential: github_cli_credential, gh: nil)
 
     result.stdout.to_s.should contain("Not logged in")
   end

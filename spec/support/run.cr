@@ -19,7 +19,7 @@ def run(
   config_fixture : String = "default",
   env : Hash(String, String) = {} of String => String,
   stdin : IO = IO::Memory.new,
-  gh : Shoo::GhCli? = nil,
+  gh : Shoo::GitHubCLI? = nil,
   credential : Shoo::Credential? = nil,
 ) : RunResult
   stdout = IO::Memory.new

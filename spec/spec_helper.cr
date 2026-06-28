@@ -7,7 +7,7 @@ Colorize.enabled = false
 
 require "../src/shoo"
 require "./support/run"
-require "./support/gh_cli_fake"
+require "./support/github_cli_mock"
 require "./support/memory_credential_store"
 require "./support/api_stub/github"
 
@@ -19,8 +19,8 @@ def github_token(value : String = "ghp_test") : Shoo::GitHub::Token
   Shoo::GitHub::Token.parse?(value) || raise "invalid test token: #{value}"
 end
 
-def gh_credential : Shoo::Credential
-  Shoo::Credential.gh
+def github_cli_credential : Shoo::Credential
+  Shoo::Credential.github_cli
 end
 
 def token_credential(value : String = "ghp_test") : Shoo::Credential

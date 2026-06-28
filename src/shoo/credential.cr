@@ -1,7 +1,7 @@
 module Shoo
   abstract struct Credential
-    def self.gh : Gh
-      Gh.new
+    def self.github_cli : GitHubCLI
+      GitHubCLI.new
     end
 
     def self.stored(token : GitHub::Token) : Stored
@@ -13,7 +13,7 @@ module Shoo
 
       case data.provider
       when "gh"
-        Gh.new
+        GitHubCLI.new
       when "token"
         token = GitHub::Token.parse?(data.token)
         Stored.new(token) if token

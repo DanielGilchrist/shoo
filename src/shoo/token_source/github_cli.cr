@@ -1,6 +1,6 @@
 module Shoo
   abstract struct TokenSource
-    struct GitHubCli < TokenSource
+    struct GitHubCLI < TokenSource
       def describe : String
         "GitHub CLI (gh)"
       end

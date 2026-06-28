@@ -7,7 +7,7 @@ describe Shoo::Credential do
     end
 
     it "parses the gh provider" do
-      memory_store("provider: gh\n").load.should be_a(Shoo::Credential::Gh)
+      memory_store("provider: gh\n").load.should be_a(Shoo::Credential::GitHubCLI)
     end
 
     it "parses a stored token" do
@@ -22,9 +22,9 @@ describe Shoo::Credential do
   describe "saving to a store" do
     it "round-trips the gh provider" do
       store = memory_store
-      store.save(Shoo::Credential.gh)
+      store.save(Shoo::Credential.github_cli)
 
-      store.load.should be_a(Shoo::Credential::Gh)
+      store.load.should be_a(Shoo::Credential::GitHubCLI)
     end
 
     it "round-trips a stored token" do

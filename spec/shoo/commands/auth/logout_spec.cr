@@ -2,7 +2,7 @@ require "../../../spec_helper"
 
 describe Shoo::Commands::Auth::Logout do
   it "removes stored credentials" do
-    result = run(["auth", "logout"], credential: gh_credential)
+    result = run(["auth", "logout"], credential: github_cli_credential)
 
     result.stdout.to_s.should contain("Removed shoo's stored credentials")
     result.credential.should be_nil

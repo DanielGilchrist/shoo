@@ -28,14 +28,14 @@ module Shoo
     config_path : String = Config::Raw::CONFIG_PATH,
     credential_store : CredentialStore = CredentialStore::OnDisk.new,
     env : Env = Env.load,
-    gh : GhCli? = GhCli.detect,
+    gh : GitHubCLI? = GitHubCLI.detect,
   ) : Context
     context = build_context(config_path, credential_store, env, gh, stdin, stdout, stderr)
     dispatch(args, context)
     context
   end
 
-  private def build_context(config_path : String, credential_store : CredentialStore, env : Env, gh : GhCli?, stdin : IO, stdout : IO, stderr : IO) : Context
+  private def build_context(config_path : String, credential_store : CredentialStore, env : Env, gh : GitHubCLI?, stdin : IO, stdout : IO, stderr : IO) : Context
     config =
       case loaded = Config.load(config_path)
       in Config
@@ -49,8 +49,8 @@ module Shoo
     credential = credential_store.load
     credential_source =
       case credential
-      when Credential::Stored then credential.token_source
-      when Credential::Gh     then gh.try(&.token_source)
+      when Credential::Stored    then credential.token_source
+      when Credential::GitHubCLI then gh.try(&.token_source)
       end
     source = config.github.token_source(env) || credential_source
 

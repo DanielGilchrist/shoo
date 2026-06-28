@@ -6,7 +6,7 @@ module Shoo
         include Kebab::Parseable
 
         enum Method
-          Gh
+          GitHubCLI
           PasteToken
           EnvVar
         end
@@ -32,7 +32,7 @@ module Shoo
           io.puts
 
           case select_method(context, available_methods(context))
-          in Method::Gh         then login_with_gh(context)
+          in Method::GitHubCLI  then login_with_github_cli(context)
           in Method::PasteToken then login_with_pasted_token(context)
           in Method::EnvVar     then explain_environment_variable(io)
           in Nil                then io.puts "  No method selected."
@@ -52,13 +52,13 @@ module Shoo
 
         private def available_methods(context : Context) : Array(Method)
           methods = [] of Method
-          methods << Method::Gh if gh_authenticated?(context)
+          methods << Method::GitHubCLI if github_cli_authenticated?(context)
           methods << Method::PasteToken
           methods << Method::EnvVar
           methods
         end
 
-        private def gh_authenticated?(context : Context) : Bool
+        private def github_cli_authenticated?(context : Context) : Bool
           gh = context.gh
           return false unless gh
 
@@ -82,17 +82,17 @@ module Shoo
 
         private def label(method : Method) : String
           case method
-          in Method::Gh         then "GitHub CLI (gh)"
+          in Method::GitHubCLI  then "GitHub CLI (gh)"
           in Method::PasteToken then "Paste a personal access token"
           in Method::EnvVar     then "Use an environment variable"
           end
         end
 
         private def recommendation(method : Method) : String
-          method.gh? ? "  #{"← recommended".colorize.dark_gray}" : ""
+          method == Method::GitHubCLI ? "  #{"← recommended".colorize.dark_gray}" : ""
         end
 
-        private def login_with_gh(context : Context) : Nil
+        private def login_with_github_cli(context : Context) : Nil
           gh = context.gh
           return context.abort!("The gh CLI is not available.") unless gh
 
@@ -100,13 +100,13 @@ module Shoo
           return context.abort!("gh is not authenticated. Run `gh auth login` first.") unless token
 
           identity = verify!(context, token)
-          ensure_gh_scope(context, gh, identity)
+          ensure_github_cli_scope(context, gh, identity)
 
-          context.credential_store.save(Credential.gh)
+          context.credential_store.save(Credential.github_cli)
           report_success(context, identity)
         end
 
-        private def ensure_gh_scope(context : Context, gh : GhCli, identity : GitHub::Identity) : Nil
+        private def ensure_github_cli_scope(context : Context, gh : GitHubCLI, identity : GitHub::Identity) : Nil
           return if identity.scopes.permits_notifications?
 
           warn_missing_scope(context.stdout)

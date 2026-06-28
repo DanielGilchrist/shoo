@@ -2,7 +2,7 @@ module Shoo
   class Context
     getter config : Config
     getter credential : Credential?
-    getter gh : GhCli?
+    getter gh : GitHubCLI?
     getter credential_store : CredentialStore
     getter token_source : TokenSource?
     getter stdout : IO

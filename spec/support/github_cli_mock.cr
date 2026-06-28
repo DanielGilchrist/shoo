@@ -1,4 +1,4 @@
-class Shoo::GhCli::Fake < Shoo::GhCli
+class Shoo::GitHubCLIMock < Shoo::GitHubCLI
   getter refreshed : Array(String)
 
   def initialize(@token : Shoo::GitHub::Token? = nil, @refresh_succeeds : Bool = true)

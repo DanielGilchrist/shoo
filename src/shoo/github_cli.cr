@@ -1,19 +1,19 @@
 module Shoo
-  abstract class GhCli
+  abstract class GitHubCLI
     abstract def token : GitHub::Token?
     abstract def refresh(scope : String) : Bool
 
     def token_source : TokenSource?
       resolved = token
-      TokenSource::GitHubCli.new(resolved) if resolved
+      TokenSource::GitHubCLI.new(resolved) if resolved
     end
 
-    def self.detect : GhCli?
+    def self.detect : GitHubCLI?
       System.detect
     end
 
-    class System < GhCli
-      def self.detect : GhCli?
+    class System < GitHubCLI
+      def self.detect : GitHubCLI?
         Process.find_executable("gh") ? new : nil
       end
 
