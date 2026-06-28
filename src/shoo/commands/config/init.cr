@@ -1,7 +1,7 @@
 module Shoo
   module Commands
     struct Config
-      @[Kebab::Command(summary: "Write a starter config file")]
+      @[Kebab::Command(summary: "Initialise a config file")]
       struct Init
         include Kebab::Parseable
 
@@ -18,7 +18,7 @@ module Shoo
           store.write(::Shoo::Config::Template::CONTENT)
 
           io = context.stdout
-          io.puts "#{"✓".colorize.green} Wrote a starter config to #{store.path}"
+          io.puts "#{"✓".colorize.green} Initialised config at #{store.path}"
           io.puts "  Edit it, then try: #{"shoo notification list --verdict".colorize.bold}"
         end
       end
