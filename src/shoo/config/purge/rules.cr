@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     struct Purge
       struct Rules
         alias RawRules = Raw::Purge::Rules

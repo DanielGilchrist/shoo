@@ -4,8 +4,13 @@ struct RunResult
   getter context : Shoo::Context?
   getter stdout : IO::Memory
   getter stderr : IO::Memory
+  getter credential_store : Shoo::Authentication::CredentialStore
 
-  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory)
+  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory, @credential_store : Shoo::Authentication::CredentialStore)
+  end
+
+  def credential : Shoo::Authentication::Credential?
+    @credential_store.load
   end
 end
 
@@ -14,9 +19,13 @@ def run(
   config_fixture : String = "default",
   env : Hash(String, String) = {} of String => String,
   stdin : IO = IO::Memory.new,
+  gh : Shoo::Authentication::GitHubCLI? = nil,
+  credential : Shoo::Authentication::Credential? = nil,
 ) : RunResult
   stdout = IO::Memory.new
   stderr = IO::Memory.new
+  credential_store = Shoo::Authentication::CredentialStore::InMemory.new
+  credential_store.save(credential) if credential
 
   context =
     begin
@@ -26,13 +35,15 @@ def run(
         stdout: stdout,
         stderr: stderr,
         config_path: "#{CONFIG_FIXTURE_PATH}/#{config_fixture}.yml",
+        credential_store: credential_store,
         env: Shoo::Env.new(env),
+        gh: gh,
       )
     rescue Shoo::ExitProgram
       nil
     end
 
-  RunResult.new(context, stdout, stderr)
+  RunResult.new(context, stdout, stderr, credential_store)
 end
 
 def build_stdin(*lines : String) : IO

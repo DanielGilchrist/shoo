@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     struct Purge
       def self.parse(raw : Raw::Purge) : Purge | Array(Error)
         errors = [] of Error

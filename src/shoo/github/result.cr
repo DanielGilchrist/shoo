@@ -1,6 +1,6 @@
 module Shoo
   module GitHub
-    class Result(T)
+    struct Result(T)
       alias E = Error
 
       def self.from(response) : self

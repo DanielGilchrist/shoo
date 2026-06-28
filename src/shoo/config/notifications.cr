@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     struct Notifications
       def self.parse(raw : Raw::Notifications) : Notifications | Array(Error)
         purge = Purge.parse(raw.purge)

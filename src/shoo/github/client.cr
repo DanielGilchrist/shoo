@@ -1,7 +1,7 @@
 module Shoo
   module GitHub
     struct Client
-      def initialize(token : String)
+      def initialize(token : Token)
         @request = Request.new(token)
       end
 
@@ -23,6 +23,10 @@ module Shoo
 
       def teams : Teams
         Teams.new(@request)
+      end
+
+      def user : Users
+        Users.new(@request)
       end
     end
   end

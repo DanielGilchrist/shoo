@@ -9,9 +9,54 @@ TODO: Write installation instructions here
 ## Usage
 
 ```bash
-# Filter notifications based on your configuration
+# Connect shoo to GitHub (interactive)
+shoo auth login
+
+# Show your filtered inbox without changing anything
+shoo notification list
+
+# Purge unwanted notifications based on your configuration
 shoo notification purge
 ```
+
+Also see `shoo --help`:
+```sh
+❯ shoo --help
+Manage GitHub notifications with configurable filtering rules
+
+Usage: shoo <command>
+
+Commands:
+  auth          Manage GitHub authentication
+  notification  Commands for notifications
+  help          Show this help
+
+Options:
+  -h, --help  Show this help
+```
+
+## Authentication
+
+shoo needs a GitHub token with the `notifications` scope (a `repo`-scoped token also works). The easiest way to set one up:
+
+```bash
+shoo auth login
+```
+
+It detects how you can authenticate and lets you pick:
+
+- **GitHub CLI (`gh`)** — if you already use `gh`, shoo delegates to it and stores no token of its own (it runs `gh auth token` on demand). If you haven't signed into `gh` yet, shoo offers to run `gh auth login` for you. If your `gh` login is missing the `notifications` scope, shoo offers to add it.
+- **Paste a token** - a personal access token, stored at `~/.config/shoo/credentials`.
+- **Environment variable** - shoo prints the variable to export.
+
+Check or clear the current login:
+
+```bash
+shoo auth status   # who you're logged in as, and where the token comes from
+shoo auth logout   # remove shoo's stored credentials (your gh login is untouched)
+```
+
+A token is resolved in this order: `SHOO_GITHUB_TOKEN` (or a custom environment variable named in your config) → a literal token in `config.yml` → the credentials saved by `auth login`.
 
 ## Configuration
 
@@ -19,7 +64,9 @@ Create `~/.config/shoo/config.yml`:
 
 ```yaml
 github:
-  token: "your_github_token_here"  # Optional, can provide a custom ENV variable with your token or just set SHOO_GITHUB_TOKEN
+  # Optional. Prefer `shoo auth login`. You can also set a literal token here,
+  # name a custom environment variable to read it from, or just set SHOO_GITHUB_TOKEN.
+  token: "your_github_token_here"
 
 notifications:
   purge:

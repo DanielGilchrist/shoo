@@ -132,7 +132,7 @@ describe Shoo::Commands::List do
   it "errors when no GitHub token is configured" do
     result = run(["notification", "list"], config_fixture: "no_token")
 
-    result.stderr.to_s.should contain("GitHub token not provided!")
+    result.stderr.to_s.should contain("Not authenticated")
   end
 
   it "resolves the token from an environment variable" do

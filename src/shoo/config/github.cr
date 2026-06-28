@@ -1,24 +1,29 @@
 module Shoo
-  class Config
+  struct Config
     struct Github
       GITHUB_TOKEN_PREFIX = "ghp_"
 
-      def self.parse(raw : Raw::Github, env : Env) : Github
-        new(resolve_token(raw.config_token, env))
+      def self.parse(raw : Raw::Github) : Github
+        new(raw.config_token)
       end
 
-      private def self.resolve_token(config_token : String?, env : Env) : String?
-        if config_token && config_token.starts_with?(GITHUB_TOKEN_PREFIX)
-          config_token
-        else
-          env.github_token(from: config_token)
+      private def initialize(@config_token : String?)
+      end
+
+      def token_source(env : Env) : Authentication::TokenSource?
+        configured = @config_token
+        literal = configured if configured && configured.starts_with?(GITHUB_TOKEN_PREFIX)
+        custom_variable = literal ? nil : configured
+
+        if lookup = env.github_token(from: custom_variable)
+          return Authentication::TokenSource::Environment.new(lookup.token, lookup.name)
         end
-      end
 
-      private def initialize(@token : String?)
-      end
+        return unless literal
 
-      getter token : String?
+        token = GitHub::Token.parse?(literal)
+        Authentication::TokenSource::ConfigFile.new(token) if token
+      end
     end
   end
 end

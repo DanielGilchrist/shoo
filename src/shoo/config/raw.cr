@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     struct Raw
       include YAML::Serializable
 
