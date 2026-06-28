@@ -8,7 +8,7 @@ module Shoo
         end
 
         def to_raw : Raw
-          Raw.new(provider: "token", token: @token.value)
+          Raw.new(provider: Provider::Token, token: @token.value)
         end
 
         def token_source : TokenSource

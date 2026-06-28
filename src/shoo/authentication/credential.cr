@@ -13,27 +13,20 @@ module Shoo
         data = Raw.from_yaml(raw)
 
         case data.provider
-        when "gh"
-          GitHubCLI.new
-        when "token"
-          token = GitHub::Token.parse?(data.token)
-          PersonalAccessToken.new(token) if token
+        in Provider::Gh    then GitHubCLI.new
+        in Provider::Token then from_token(data.token)
+        in Nil             then nil
         end
       rescue YAML::ParseException
         nil
       end
 
-      abstract def to_raw : Raw
-
-      struct Raw
-        include YAML::Serializable
-
-        getter provider : String
-        getter token : String?
-
-        def initialize(@provider : String, @token : String? = nil)
-        end
+      private def self.from_token(value : String?) : PersonalAccessToken?
+        token = GitHub::Token.parse?(value)
+        PersonalAccessToken.new(token) if token
       end
+
+      abstract def to_raw : Raw
     end
   end
 end
