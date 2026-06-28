@@ -17,7 +17,7 @@ module Shoo
           end
         end
 
-        private def render(io : IO, source : TokenSource, identity : GitHub::Identity, credential : Credential?) : Nil
+        private def render(io : IO, source : Authentication::TokenSource, identity : GitHub::Identity, credential : Authentication::Credential?) : Nil
           io.puts "#{"✓".colorize.green} Logged in to github.com as #{"@#{identity.user.login}".colorize.bold}"
           io.puts "  via     #{source.describe}"
           io.puts "  scopes  #{identity.scopes}"

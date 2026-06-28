@@ -9,7 +9,7 @@ describe Shoo::Commands::Auth::Login do
     result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
   end
 
   it "logs in through the gh CLI" do
@@ -17,13 +17,13 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    gh = Shoo::GitHubCLIMock.new(token: github_token("ghp_gh"))
+    gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
     result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: "no_token")
 
     output = result.stdout.to_s
     output.should contain("GitHub CLI (gh)")
     output.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Credential::GitHubCLI)
+    result.credential.should be_a(Shoo::Authentication::Credential::GitHubCLI)
   end
 
   it "offers to add the notifications scope when gh lacks it" do
@@ -31,7 +31,7 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "read:org")
     end
 
-    gh = Shoo::GitHubCLIMock.new(token: github_token("ghp_gh"))
+    gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
     result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token")
 
     output = result.stdout.to_s
@@ -48,7 +48,7 @@ describe Shoo::Commands::Auth::Login do
     result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
   end
 
   it "explains the environment variable option" do

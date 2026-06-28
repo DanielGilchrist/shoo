@@ -19,14 +19,14 @@ def github_token(value : String = "ghp_test") : Shoo::GitHub::Token
   Shoo::GitHub::Token.parse?(value) || raise "invalid test token: #{value}"
 end
 
-def github_cli_credential : Shoo::Credential
-  Shoo::Credential.github_cli
+def github_cli_credential : Shoo::Authentication::Credential
+  Shoo::Authentication::Credential.github_cli
 end
 
-def token_credential(value : String = "ghp_test") : Shoo::Credential
-  Shoo::Credential.stored(github_token(value))
+def token_credential(value : String = "ghp_test") : Shoo::Authentication::Credential
+  Shoo::Authentication::Credential.stored(github_token(value))
 end
 
-def memory_store(content : String? = nil) : Shoo::CredentialStore::InMemory
-  Shoo::CredentialStore::InMemory.new(content)
+def memory_store(content : String? = nil) : Shoo::Authentication::CredentialStore::InMemory
+  Shoo::Authentication::CredentialStore::InMemory.new(content)
 end

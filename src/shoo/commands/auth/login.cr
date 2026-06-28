@@ -102,11 +102,11 @@ module Shoo
           identity = verify!(context, token)
           ensure_github_cli_scope(context, gh, identity)
 
-          context.credential_store.save(Credential.github_cli)
+          context.credential_store.save(Authentication::Credential.github_cli)
           report_success(context, identity)
         end
 
-        private def ensure_github_cli_scope(context : Context, gh : GitHubCLI, identity : GitHub::Identity) : Nil
+        private def ensure_github_cli_scope(context : Context, gh : Authentication::GitHubCLI, identity : GitHub::Identity) : Nil
           return if identity.scopes.permits_notifications?
 
           warn_missing_scope(context.stdout)
@@ -134,7 +134,7 @@ module Shoo
             context.stdout.puts "  Create one with that scope at #{TOKEN_URL.colorize.blue}"
           end
 
-          context.credential_store.save(Credential.stored(token))
+          context.credential_store.save(Authentication::Credential.stored(token))
           report_success(context, identity)
         end
 

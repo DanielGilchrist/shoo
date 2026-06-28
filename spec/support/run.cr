@@ -4,12 +4,12 @@ struct RunResult
   getter context : Shoo::Context?
   getter stdout : IO::Memory
   getter stderr : IO::Memory
-  getter credential_store : Shoo::CredentialStore
+  getter credential_store : Shoo::Authentication::CredentialStore
 
-  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory, @credential_store : Shoo::CredentialStore)
+  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory, @credential_store : Shoo::Authentication::CredentialStore)
   end
 
-  def credential : Shoo::Credential?
+  def credential : Shoo::Authentication::Credential?
     @credential_store.load
   end
 end
@@ -19,12 +19,12 @@ def run(
   config_fixture : String = "default",
   env : Hash(String, String) = {} of String => String,
   stdin : IO = IO::Memory.new,
-  gh : Shoo::GitHubCLI? = nil,
-  credential : Shoo::Credential? = nil,
+  gh : Shoo::Authentication::GitHubCLI? = nil,
+  credential : Shoo::Authentication::Credential? = nil,
 ) : RunResult
   stdout = IO::Memory.new
   stderr = IO::Memory.new
-  credential_store = Shoo::CredentialStore::InMemory.new
+  credential_store = Shoo::Authentication::CredentialStore::InMemory.new
   credential.try { |seed| credential_store.save(seed) }
 
   context =

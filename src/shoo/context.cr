@@ -1,10 +1,10 @@
 module Shoo
   class Context
     getter config : Config
-    getter credential : Credential?
-    getter gh : GitHubCLI?
-    getter credential_store : CredentialStore
-    getter token_source : TokenSource?
+    getter credential : Authentication::Credential?
+    getter gh : Authentication::GitHubCLI?
+    getter credential_store : Authentication::CredentialStore
+    getter token_source : Authentication::TokenSource?
     getter stdout : IO
     getter stderr : IO
     getter stdin : IO
@@ -23,7 +23,7 @@ module Shoo
       raise ExitProgram.new(1)
     end
 
-    private def authenticated_source : TokenSource
+    private def authenticated_source : Authentication::TokenSource
       @token_source || abort!("Not authenticated. Run `shoo auth login`.")
     end
   end

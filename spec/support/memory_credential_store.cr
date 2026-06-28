@@ -1,4 +1,4 @@
-class Shoo::CredentialStore::InMemory < Shoo::CredentialStore
+class Shoo::Authentication::CredentialStore::InMemory < Shoo::Authentication::CredentialStore
   def initialize(@content : String? = nil)
   end
 

@@ -46,7 +46,7 @@ describe Shoo::Commands::Auth::Status do
       user.identity(login: "octocat")
     end
 
-    gh = Shoo::GitHubCLIMock.new(token: github_token("ghp_gh"))
+    gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
     result = run(["auth", "status"], config_fixture: "no_token", credential: github_cli_credential, gh: gh)
 
     result.stdout.to_s.should contain("GitHub CLI (gh)")
