@@ -5,7 +5,7 @@ module Shoo
       include Kebab::Parseable
 
       @[Kebab::Subcommand]
-      getter command : Notification
+      getter command : Notification | Auth
     end
   end
 end

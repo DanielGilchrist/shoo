@@ -6,8 +6,8 @@ module APIStub
       def initialize(@builder : Builder)
       end
 
-      protected def stub(method : Symbol, path : String, query : Hash(String, String)? = nil, status = 200, body = "")
-        @builder.register(method, path, query, status, body)
+      protected def stub(method : Symbol, path : String, query : Hash(String, String)? = nil, status = 200, body = "", headers : Hash(String, String)? = nil)
+        @builder.register(method, path, query, status, body, headers)
       end
 
       protected def delete(path : String, success : Bool)

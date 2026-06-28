@@ -5,6 +5,7 @@ require "./github/resource_macro"
 require "./github/resources/notifications"
 require "./github/resources/pull_requests"
 require "./github/resources/issues"
+require "./github/resources/user"
 
 module APIStub
   module GitHub
