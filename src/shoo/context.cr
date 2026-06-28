@@ -11,11 +11,11 @@ module Shoo
     def initialize(@config, @env : Env, @credential, @gh, @credential_store, @stdout, @stderr, @stdin)
     end
 
-    @token_source : Authentication::TokenSource?
+    @token_source : Tuple(Authentication::TokenSource?)?
     @client : GitHub::Client?
 
     def token_source : Authentication::TokenSource?
-      @token_source ||= @config.github.token_source(@env) || credential_source
+      (@token_source ||= {@config.github.token_source(@env) || credential_source})[0]
     end
 
     def client : GitHub::Client
