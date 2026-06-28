@@ -47,14 +47,7 @@ module Shoo
       end
 
     credential = credential_store.load
-    credential_source =
-      case credential
-      when Authentication::Credential::Stored    then credential.token_source
-      when Authentication::Credential::GitHubCLI then gh.try(&.token_source)
-      end
-    source = config.github.token_source(env) || credential_source
-
-    Context.new(config, credential, gh, credential_store, source, stdout, stderr, stdin)
+    Context.new(config, env, credential, gh, credential_store, stdout, stderr, stdin)
   end
 
   private def dispatch(args : Array(String), context : Context) : Nil
