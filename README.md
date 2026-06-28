@@ -21,7 +21,7 @@ shoo notification purge
 
 ## Authentication
 
-shoo needs a GitHub token with the `notifications` scope. The easiest way to set one up:
+shoo needs a GitHub token with the `notifications` scope (a `repo`-scoped token also works). The easiest way to set one up:
 
 ```bash
 shoo auth login
