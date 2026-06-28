@@ -9,6 +9,8 @@ require "../src/shoo"
 require "./support/run"
 require "./support/github_cli_mock"
 require "./support/memory_credential_store"
+require "./support/memory_config_store"
+require "./support/config_fixtures"
 require "./support/api_stub/github"
 
 Spec.before_each do

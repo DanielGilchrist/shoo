@@ -4,21 +4,14 @@ private alias Config = Shoo::Config
 private alias Error = Config::Error
 private alias StateRule = Config::Purge::Rules::PurgeIf::StateRule
 
-private def with_config_file(yaml : String, &)
-  path = File.tempname("shoo_config", ".yml")
-
-  begin
-    File.write(path, yaml)
-    yield path
-  ensure
-    File.delete(path) if File.exists?(path)
-  end
+private def load_config(yaml : String)
+  Config.load(Config::Store::InMemory.new(yaml))
 end
 
 describe Shoo::Config do
   describe ".load" do
-    it "returns a Config for a valid config file" do
-      with_config_file(<<-YAML) do |path|
+    it "returns a Config for a valid config" do
+      result = load_config(<<-YAML)
         notifications:
           purge:
             global:
@@ -32,34 +25,29 @@ describe Shoo::Config do
                   after: 2d
               unsubscribe: true
         YAML
-        result = Config.load(path)
-        result.should be_a(Config)
-        config = result.as(Config)
 
-        rules = config.notifications.purge.global
-        rules.keep_if.author_in_teams.size.should eq(1)
-        rules.keep_if.author_in_teams.first.value.should eq("core-team")
-        rules.keep_if.mentioned?.should be_true
-        rules.purge_if.merged.should be_a(StateRule::Always)
-        rules.purge_if.closed.should be_a(StateRule::After)
-        rules.unsubscribe?.should be_true
-      end
-    end
-
-    it "returns a Config for an empty config file" do
-      with_config_file("") do |path|
-        result = Config.load(path)
-        result.should be_a(Config)
-      end
-    end
-
-    it "returns a Config when file does not exist" do
-      result = Config.load("/tmp/nonexistent_shoo_config_#{rand}.yml")
       result.should be_a(Config)
+      config = result.as(Config)
+
+      rules = config.notifications.purge.global
+      rules.keep_if.author_in_teams.size.should eq(1)
+      rules.keep_if.author_in_teams.first.value.should eq("core-team")
+      rules.keep_if.mentioned?.should be_true
+      rules.purge_if.merged.should be_a(StateRule::Always)
+      rules.purge_if.closed.should be_a(StateRule::After)
+      rules.unsubscribe?.should be_true
+    end
+
+    it "returns a Config for empty content" do
+      load_config("").should be_a(Config)
+    end
+
+    it "returns a Config when there is no stored config" do
+      Config.load(Config::Store::InMemory.new).should be_a(Config)
     end
 
     it "parses repo-specific rules" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             repos:
@@ -70,36 +58,34 @@ describe Shoo::Config do
                   merged:
                     after: 1w
         YAML
-        result = Config.load(path)
-        result.should be_a(Config)
-        config = result.as(Config)
 
-        repos = config.notifications.purge.repos
-        repos.size.should eq(1)
-        repos.has_key?("my-org/my-repo").should be_true
+      result.should be_a(Config)
+      config = result.as(Config)
 
-        rules = repos["my-org/my-repo"]
-        rules.keep_if.authors.should eq(["someone"])
-        rules.purge_if.merged.should be_a(StateRule::After)
-        rules.purge_if.merged.as(StateRule::After).duration.span.should eq(7.days)
-      end
+      repos = config.notifications.purge.repos
+      repos.size.should eq(1)
+      repos.has_key?("my-org/my-repo").should be_true
+
+      rules = repos["my-org/my-repo"]
+      rules.keep_if.authors.should eq(["someone"])
+      rules.purge_if.merged.should be_a(StateRule::After)
+      rules.purge_if.merged.as(StateRule::After).duration.span.should eq(7.days)
     end
 
     it "returns errors for invalid slugs in global rules" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             global:
               keep_if:
                 author_in_teams: ["INVALID"]
         YAML
-        result = Config.load(path)
-        result.should be_a(Array(Error))
-      end
+
+      result.should be_a(Array(Error))
     end
 
     it "returns errors for invalid slugs in repo rules" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             repos:
@@ -107,13 +93,12 @@ describe Shoo::Config do
                 keep_if:
                   requested_teams: ["NOT VALID"]
         YAML
-        result = Config.load(path)
-        result.should be_a(Array(Error))
-      end
+
+      result.should be_a(Array(Error))
     end
 
     it "returns errors for invalid duration in purge_if" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             global:
@@ -121,13 +106,12 @@ describe Shoo::Config do
                 merged:
                   after: banana
         YAML
-        result = Config.load(path)
-        result.should be_a(Array(Error))
-      end
+
+      result.should be_a(Array(Error))
     end
 
     it "returns errors for mutually exclusive always and after" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             global:
@@ -136,13 +120,12 @@ describe Shoo::Config do
                   always: true
                   after: 1d
         YAML
-        result = Config.load(path)
-        result.should be_a(Array(Error))
-      end
+
+      result.should be_a(Array(Error))
     end
 
     it "collects errors from multiple repos and global" do
-      with_config_file(<<-YAML) do |path|
+      result = load_config(<<-YAML)
         notifications:
           purge:
             global:
@@ -157,11 +140,10 @@ describe Shoo::Config do
                 keep_if:
                   mentioned_teams: ["ALSO BAD"]
         YAML
-        result = Config.load(path)
-        result.should be_a(Array(Error))
-        errors = result.as(Array(Error))
-        errors.size.should eq(3)
-      end
+
+      result.should be_a(Array(Error))
+      errors = result.as(Array(Error))
+      errors.size.should eq(3)
     end
   end
 end

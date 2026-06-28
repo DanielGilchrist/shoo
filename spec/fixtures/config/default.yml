@@ -1,9 +1,0 @@
-github:
-  token: "ghp_faketoken"
-
-notifications:
-  purge:
-    global:
-      purge_if:
-        merged:
-          always: true

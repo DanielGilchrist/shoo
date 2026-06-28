@@ -3,12 +3,10 @@ module Shoo
     struct Raw
       include YAML::Serializable
 
-      CONFIG_PATH = "#{Path.home}/.config/shoo/config.yml"
+      def self.parse(content : String?) : Raw
+        return new if content.nil? || content.blank?
 
-      def self.load(path : String = CONFIG_PATH) : Raw
-        return new unless File.exists?(path)
-
-        File.open(path) { |file| from_yaml(file) }
+        from_yaml(content)
       end
 
       getter notifications : Notifications = Notifications.new

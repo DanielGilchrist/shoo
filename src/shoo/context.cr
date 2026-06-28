@@ -1,6 +1,7 @@
 module Shoo
   class Context
     getter config : Config
+    getter config_store : Config::Store
     getter credential : Authentication::Credential?
     getter gh : Authentication::GitHubCLI?
     getter credential_store : Authentication::CredentialStore
@@ -8,7 +9,7 @@ module Shoo
     getter stderr : IO
     getter stdin : IO
 
-    def initialize(@config, @env : Env, @credential, @gh, @credential_store, @stdout, @stderr, @stdin)
+    def initialize(@config, @config_store : Config::Store, @env : Env, @credential, @gh, @credential_store, @stdout, @stderr, @stdin)
     end
 
     @token_source : Tuple(Authentication::TokenSource?)?
