@@ -35,8 +35,8 @@ module Shoo
     private def credential_source : Authentication::TokenSource?
       credential = @credential
       case credential
-      when Authentication::Credential::Stored    then credential.token_source
-      when Authentication::Credential::GitHubCLI then @gh.try(&.token_source)
+      when Authentication::Credential::PersonalAccessToken then credential.token_source
+      when Authentication::Credential::GitHubCLI           then @gh.try(&.token_source)
       end
     end
 

@@ -14,7 +14,7 @@ module Shoo
           return @context.abort!("That token lacks the `#{REQUIRED_SCOPE}` scope (needed to read and dismiss notifications). Create one at #{TOKEN_URL}")
         end
 
-        store(Credential.stored(token), identity)
+        store(Credential.personal_access_token(token), identity)
       end
 
       def via_github_cli : Nil

@@ -26,7 +26,7 @@ def github_cli_credential : Shoo::Authentication::Credential
 end
 
 def token_credential(value : String = "ghp_test") : Shoo::Authentication::Credential
-  Shoo::Authentication::Credential.stored(github_token(value))
+  Shoo::Authentication::Credential.personal_access_token(github_token(value))
 end
 
 def memory_store(content : String? = nil) : Shoo::Authentication::CredentialStore::InMemory

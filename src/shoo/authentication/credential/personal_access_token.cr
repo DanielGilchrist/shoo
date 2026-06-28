@@ -1,7 +1,7 @@
 module Shoo
   module Authentication
     abstract struct Credential
-      struct Stored < Credential
+      struct PersonalAccessToken < Credential
         getter token : GitHub::Token
 
         def initialize(@token : GitHub::Token)

@@ -9,7 +9,7 @@ describe Shoo::Commands::Auth::Login do
     result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
   end
 
   it "logs in through the gh CLI" do
@@ -71,7 +71,7 @@ describe Shoo::Commands::Auth::Login do
     result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token")
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
   end
 
   it "explains the environment variable option" do
