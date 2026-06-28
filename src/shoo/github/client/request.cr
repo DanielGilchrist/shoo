@@ -38,7 +38,7 @@ module Shoo
         end
 
         def delete(path : String) : Bool
-          response = HTTP::Client.delete("#{BASE_URL}#{path}", headers: @headers)
+          response = HTTP::Client.delete(build_uri(path), headers: @headers)
           response.success?
         end
 
