@@ -11,11 +11,12 @@ module Shoo
 
       def self.parse(raw : String) : Credential?
         data = Raw.from_yaml(raw)
+        provider = data.provider
+        return nil unless provider
 
-        case data.provider
-        in Provider::Gh    then GitHubCLI.new
-        in Provider::Token then from_token(data.token)
-        in Nil             then nil
+        case provider
+        in .gh?    then GitHubCLI.new
+        in .token? then from_token(data.token)
         end
       rescue YAML::ParseException
         nil
