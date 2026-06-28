@@ -13,6 +13,7 @@ module Shoo
       choice = @stdin.gets.try(&.strip)
       index = choice.nil? || choice.empty? ? 0 : choice.to_i?.try(&.pred)
       return unless index
+      return if index < 0
 
       options[index]?
     end

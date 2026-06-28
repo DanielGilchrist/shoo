@@ -13,6 +13,11 @@ describe Shoo::Prompt do
     it "returns nil on an out-of-range choice" do
       Shoo::Prompt.new(build_stdin("9"), IO::Memory.new).choose("pick", ["a"], &.itself).should be_nil
     end
+
+    it "rejects zero and negative input rather than wrapping" do
+      Shoo::Prompt.new(build_stdin("0"), IO::Memory.new).choose("pick", ["a", "b"], &.itself).should be_nil
+      Shoo::Prompt.new(build_stdin("-1"), IO::Memory.new).choose("pick", ["a", "b"], &.itself).should be_nil
+    end
   end
 
   describe "#confirm" do
