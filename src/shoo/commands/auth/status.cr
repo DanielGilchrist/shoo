@@ -9,12 +9,8 @@ module Shoo
           source = context.token_source
           return context.stdout.puts("Not logged in. Run `shoo auth login`.") unless source
 
-          case identity = context.client.user.identity
-          in GitHub::Identity
-            render(context.stdout, source, identity, context.credential)
-          in GitHub::Error
-            context.abort!("Could not verify token: #{identity.message}")
-          end
+          identity = Authentication::Verification.new(context).verify(source.token)
+          render(context.stdout, source, identity, context.credential)
         end
 
         private def render(io : IO, source : Authentication::TokenSource, identity : GitHub::Identity, credential : Authentication::Credential?) : Nil

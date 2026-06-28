@@ -18,6 +18,10 @@ module Shoo
       @client ||= GitHub::Client.new(authenticated_source.token)
     end
 
+    def prompt : Prompt
+      Prompt.new(@stdin, @stdout)
+    end
+
     def abort!(message : String) : NoReturn
       @stderr.puts message
       raise ExitProgram.new(1)
