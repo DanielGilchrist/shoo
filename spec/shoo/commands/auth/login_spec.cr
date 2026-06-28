@@ -26,6 +26,29 @@ describe Shoo::Commands::Auth::Login do
     result.credential.should be_a(Shoo::Authentication::Credential::GitHubCLI)
   end
 
+  it "drives gh auth login when gh isn't signed in yet" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "notifications")
+    end
+
+    gh = Shoo::Authentication::GitHubCLIMock.new(token_after_login: github_token("ghp_gh"))
+    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token")
+
+    output = result.stdout.to_s
+    output.should contain("Connected as @octocat")
+    gh.logins.should eq(1)
+    result.credential.should be_a(Shoo::Authentication::Credential::GitHubCLI)
+  end
+
+  it "aborts when the user declines to sign into gh" do
+    gh = Shoo::Authentication::GitHubCLIMock.new
+    result = run(["auth", "login"], stdin: build_stdin("1", "n"), gh: gh, config_fixture: "no_token")
+
+    result.stderr.to_s.should contain("gh auth login")
+    gh.logins.should eq(0)
+    result.credential.should be_nil
+  end
+
   it "offers to add the notifications scope when gh lacks it" do
     APIStub::GitHub.stub do
       user.identity(login: "octocat", scopes: "read:org")

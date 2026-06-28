@@ -21,8 +21,7 @@ module Shoo
         gh = @context.gh
         return @context.abort!("The gh CLI is not available.") unless gh
 
-        token = gh.fetch_token
-        return @context.abort!("gh is not authenticated. Run `gh auth login` first.") unless token
+        token = gh.fetch_token || authenticate_gh(gh)
 
         identity = verify(token)
         ensure_scope(gh, identity)
@@ -48,6 +47,17 @@ module Shoo
 
       private def verify(token : GitHub::Token) : GitHub::Identity
         Verification.new(@context).verify(token)
+      end
+
+      private def authenticate_gh(gh : GitHubCLI) : GitHub::Token
+        unless @context.prompt.confirm("  gh isn't signed in. Sign in now? runs `gh auth login`")
+          @context.abort!("Run `gh auth login`, then try again.")
+        end
+
+        stdout.puts "  → handing off to gh…"
+        @context.abort!("gh login did not complete.") unless gh.login
+
+        gh.fetch_token || @context.abort!("gh reported success but returned no token.")
       end
 
       private def ensure_scope(gh : GitHubCLI, identity : GitHub::Identity) : Nil

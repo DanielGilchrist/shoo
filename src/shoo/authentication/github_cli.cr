@@ -6,6 +6,7 @@ module Shoo
       end
 
       abstract def fetch_token : GitHub::Token?
+      abstract def login : Bool
       abstract def refresh(scope : String) : Bool
 
       def token_source : TokenSource?
@@ -22,6 +23,10 @@ module Shoo
 
         def fetch_token : GitHub::Token?
           GitHub::Token.parse?(capture("auth", "token"))
+        end
+
+        def login : Bool
+          interactive("auth", "login")
         end
 
         def refresh(scope : String) : Bool
