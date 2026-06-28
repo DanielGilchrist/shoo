@@ -22,13 +22,13 @@ module Shoo
   def main(
     args : Array(String),
     *,
-    stdin : IO = STDIN,
-    stdout : IO = STDOUT,
-    stderr : IO = STDERR,
-    config_path : String = Config::Raw::CONFIG_PATH,
-    credential_store : Authentication::CredentialStore = Authentication::CredentialStore::OnDisk.new,
-    env : Env = Env.load,
-    gh : Authentication::GitHubCLI? = Authentication::GitHubCLI.find,
+    stdin : IO,
+    stdout : IO,
+    stderr : IO,
+    config_path : String,
+    credential_store : Authentication::CredentialStore,
+    env : Env,
+    gh : Authentication::GitHubCLI?,
   ) : Context
     context = build_context(config_path, credential_store, env, gh, stdin, stdout, stderr)
     dispatch(args, context)
