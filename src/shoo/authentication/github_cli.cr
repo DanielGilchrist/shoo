@@ -13,37 +13,43 @@ module Shoo
         System.detect
       end
 
-      class System < GitHubCLI
+      private class System < GitHubCLI
+        COMMAND = "gh"
+
         @token : GitHub::Token?
         @token_resolved = false
 
         def self.detect : GitHubCLI?
-          Process.find_executable("gh") ? new : nil
+          Process.find_executable(COMMAND) ? new : nil
         end
 
         def token : GitHub::Token?
           return @token if @token_resolved
 
           @token_resolved = true
-          @token = GitHub::Token.parse?(capture(["auth", "token"]))
+          @token = GitHub::Token.parse?(capture("auth", "token"))
         end
 
         def refresh(scope : String) : Bool
-          success = Process.run(
-            "gh",
-            ["auth", "refresh", "-s", scope],
-            input: Process::Redirect::Inherit,
-            output: Process::Redirect::Inherit,
-            error: Process::Redirect::Inherit,
-          ).success?
+          success = interactive("auth", "refresh", "-s", scope)
           @token_resolved = false if success
           success
         end
 
-        private def capture(args : Array(String)) : String?
+        private def capture(*args : String) : String?
           output = IO::Memory.new
-          status = Process.run("gh", args, output: output, error: Process::Redirect::Close)
+          status = Process.run(COMMAND, args.to_a, output: output, error: Process::Redirect::Close)
           status.success? ? output.to_s.strip : nil
+        end
+
+        private def interactive(*args : String) : Bool
+          Process.run(
+            COMMAND,
+            args.to_a,
+            input: Process::Redirect::Inherit,
+            output: Process::Redirect::Inherit,
+            error: Process::Redirect::Inherit,
+          ).success?
         end
       end
     end
