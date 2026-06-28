@@ -1,7 +1,7 @@
 module Shoo
   module Authentication
     abstract class CredentialStore
-      class OnDisk < CredentialStore
+      class FileSystem < CredentialStore
         PATH = "#{Path.home}/.config/shoo/credentials"
 
         def initialize(@path : String = PATH)
