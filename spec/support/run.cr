@@ -25,7 +25,7 @@ def run(
   stdout = IO::Memory.new
   stderr = IO::Memory.new
   credential_store = Shoo::Authentication::CredentialStore::InMemory.new
-  credential.try { |seed| credential_store.save(seed) }
+  credential_store.save(credential) if credential
 
   context =
     begin
