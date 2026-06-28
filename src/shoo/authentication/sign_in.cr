@@ -21,7 +21,7 @@ module Shoo
         gh = @context.gh
         return @context.abort!("The gh CLI is not available.") unless gh
 
-        token = gh.token
+        token = gh.fetch_token
         return @context.abort!("gh is not authenticated. Run `gh auth login` first.") unless token
 
         identity = verify(token)

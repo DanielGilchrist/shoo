@@ -5,11 +5,11 @@ module Shoo
         System.find
       end
 
-      abstract def token : GitHub::Token?
+      abstract def fetch_token : GitHub::Token?
       abstract def refresh(scope : String) : Bool
 
       def token_source : TokenSource?
-        resolved = token
+        resolved = fetch_token
         TokenSource::GitHubCLI.new(resolved) if resolved
       end
 
@@ -20,16 +20,12 @@ module Shoo
           Process.find_executable(COMMAND) ? new : nil
         end
 
-        @token : GitHub::Token?
-
-        def token : GitHub::Token?
-          @token ||= GitHub::Token.parse?(capture("auth", "token"))
+        def fetch_token : GitHub::Token?
+          GitHub::Token.parse?(capture("auth", "token"))
         end
 
         def refresh(scope : String) : Bool
-          success = interactive("auth", "refresh", "-s", scope)
-          @token = nil if success
-          success
+          interactive("auth", "refresh", "-s", scope)
         end
 
         private def capture(*args : String) : String?

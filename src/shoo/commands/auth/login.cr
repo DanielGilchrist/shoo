@@ -42,7 +42,7 @@ module Shoo
 
         private def available_choices(context : Context) : Array(Choice)
           choices = [Choice::PasteToken, Choice::EnvironmentVariable]
-          choices.unshift(Choice::GitHubCLI) if github_cli_authenticated?(context)
+          choices.unshift(Choice::GitHubCLI) if github_cli_available?(context)
           choices
         end
 
@@ -65,11 +65,8 @@ module Shoo
           io.puts
         end
 
-        private def github_cli_authenticated?(context : Context) : Bool
-          gh = context.gh
-          return false unless gh
-
-          !gh.token.nil?
+        private def github_cli_available?(context : Context) : Bool
+          !context.gh.nil?
         end
       end
     end

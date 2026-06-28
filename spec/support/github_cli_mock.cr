@@ -5,7 +5,7 @@ class Shoo::Authentication::GitHubCLIMock < Shoo::Authentication::GitHubCLI
     @refreshed = [] of String
   end
 
-  def token : Shoo::GitHub::Token?
+  def fetch_token : Shoo::GitHub::Token?
     @token
   end
 
