@@ -13,12 +13,12 @@ module APIStub
         stub(:get, "/notifications", query: PAGE_1, status: status, body: Data.error(message, status).to_json)
       end
 
-      def mark_as_done(id : String, success = true)
-        delete("/notifications/threads/#{id}", success)
+      def mark_as_done(id : String, success = true, message = "Server Error")
+        delete("/notifications/threads/#{id}", success, message)
       end
 
-      def unsubscribe(id : String, success = true)
-        delete("/notifications/threads/#{id}/subscription", success)
+      def unsubscribe(id : String, success = true, message = "Server Error")
+        delete("/notifications/threads/#{id}/subscription", success, message)
       end
 
       private def build_payloads(specs : Array(Data::NotificationSpec))
@@ -30,7 +30,7 @@ module APIStub
             path = subject.path(spec.repo, id)
             url = GitHub.url(path)
             type = subject.type
-            stub(:get, path, body: subject.body)
+            stub(:get, path, status: subject.status, body: subject.body)
           end
 
           {

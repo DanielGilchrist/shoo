@@ -7,8 +7,9 @@ module APIStub
         getter type : String
         getter segment : String
         getter body : String
+        getter status : Int32
 
-        def initialize(@type, @segment, @body)
+        def initialize(@type, @segment, @body, @status = 200)
         end
 
         def path(repo : String, id : String) : String
@@ -56,6 +57,10 @@ module APIStub
           closed_at:    closed_at,
         }.to_json
         SubjectSpec.new("Issue", "issues", body)
+      end
+
+      def failing_pull_request(status = 500, message = "Server Error")
+        SubjectSpec.new("PullRequest", "pulls", error(message, status).to_json, status)
       end
 
       def error(message = "Server Error", status = 500)

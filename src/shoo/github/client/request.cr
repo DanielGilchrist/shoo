@@ -39,9 +39,9 @@ module Shoo
           end
         end
 
-        def delete(path : String) : Bool
+        def delete(path : String) : Error?
           response = @pool.checkout(&.delete(path, headers: @headers))
-          response.success?
+          Error.from_json(response.body) unless response.success?
         end
 
         private def full_path(path : String, query : TBody) : String

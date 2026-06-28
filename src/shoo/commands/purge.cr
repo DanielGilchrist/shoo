@@ -19,15 +19,13 @@ module Shoo
 
         show_mode_banner(stdout)
 
-        github_notifications =
-          case result = client.notifications.all
-          in Array(GitHub::Notification)
-            result
-          in GitHub::Error
-            context.abort!("Error fetching notifications: #{result.message}")
-          end
+        github_notifications = client.notifications.all.unwrap_or do |error|
+          context.abort!("Error fetching notifications: #{error.message}")
+        end
 
-        results = NotificationFilter.new(context.config, client, github_notifications).filter
+        results = NotificationFilter.new(context.config, client, github_notifications).filter.unwrap_or do |error|
+          context.abort!("Error evaluating notifications: #{error.message}")
+        end
 
         keeping = Array(::Shoo::Notification::Kept).new
         removing = Array(::Shoo::Notification::Purged).new
@@ -112,23 +110,31 @@ module Shoo
         io.puts "🧹 #{"Purging".colorize.red.bold} #{removing.size} notifications..."
 
         notifications_client = context.client.notifications
-        results = ConcurrentWorker.run(removing) do |notification|
-          rules = config.purge_rules_for(notification.repository_name)
+        failures = ConcurrentWorker.run(removing) do |notification|
+          error = purge_notification(notifications_client, config, notification)
+          {notification, error} if error
+        end.compact
 
-          if rules.unsubscribe?
-            notifications_client.unsubscribe(notification.id)
+        purged_count = removing.size - failures.size
+        io.puts "\n✅ Successfully purged #{purged_count.to_s.colorize.green.bold} notifications"
+
+        unless failures.empty?
+          io.puts "❌ Failed to purge #{failures.size.to_s.colorize.red.bold} notifications:"
+          failures.each do |notification, error|
+            io.puts "   #{notification.subject.title.colorize.light_gray}: #{error.message}"
           end
+        end
+      end
 
-          notifications_client.mark_as_done(notification.id)
+      private def purge_notification(client : GitHub::Client::Notifications, config : ::Shoo::Config, notification : ::Shoo::Notification::Purged) : GitHub::Error?
+        rules = config.purge_rules_for(notification.repository_name)
+
+        if rules.unsubscribe?
+          error = client.unsubscribe(notification.id)
+          return error if error
         end
 
-        success_count = results.count(true)
-        error_count = results.count(false)
-
-        io.puts "\n✅ Successfully purged #{success_count.to_s.colorize.green.bold} notifications"
-        if error_count > 0
-          io.puts "❌ Failed to purge #{error_count.to_s.colorize.red.bold} notifications"
-        end
+        client.mark_as_done(notification.id)
       end
 
       private def show_notification_detail(io : IO, notification : ::Shoo::Notification::Purged, number : Int32, reason_width : Int32, purge_reason_width : Int32) : Nil

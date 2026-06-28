@@ -10,8 +10,9 @@ module APIStub
         @builder.register(method, path, query, status, body, headers)
       end
 
-      protected def delete(path : String, success : Bool)
-        stub(:delete, path, status: success ? 204 : 500)
+      protected def delete(path : String, success : Bool, message = "Server Error")
+        body = success ? "" : Data.error(message, 500).to_json
+        stub(:delete, path, status: success ? 204 : 500, body: body)
       end
 
       protected def paginated(path : String, items : Array, per_page = 50)

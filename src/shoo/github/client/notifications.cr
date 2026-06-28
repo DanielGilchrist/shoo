@@ -5,19 +5,19 @@ module Shoo
         def initialize(@request : Request)
         end
 
-        def all(per_page : Int32 = 50) : Array(Notification) | Error
+        def all(per_page : Int32 = 50) : Result(Array(Notification))
           notifications = [] of Notification
           page = 1
 
           loop do
-            result = list(page, per_page).unwrap_or { |error| return error }
+            result = list(page, per_page).unwrap_or { |error| return Result(Array(Notification)).new(error) }
             notifications.concat(result)
             break if result.size < per_page
 
             page += 1
           end
 
-          notifications
+          Result(Array(Notification)).new(notifications)
         end
 
         # https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28&versionId=free-pro-team%40latest&productId=rest#list-notifications-for-the-authenticated-user
@@ -29,12 +29,12 @@ module Shoo
         end
 
         # https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28&versionId=free-pro-team%40latest&productId=rest#mark-notifications-as-read
-        def mark_as_done(notification_id : String) : Bool
+        def mark_as_done(notification_id : String) : Error?
           @request.delete("/notifications/threads/#{notification_id}")
         end
 
         # https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28#delete-a-thread-subscription
-        def unsubscribe(notification_id : String) : Bool
+        def unsubscribe(notification_id : String) : Error?
           @request.delete("/notifications/threads/#{notification_id}/subscription")
         end
       end

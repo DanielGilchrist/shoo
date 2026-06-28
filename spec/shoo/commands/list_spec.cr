@@ -245,6 +245,22 @@ describe Shoo::Commands::List do
     result.stderr.to_s.should contain("Server Error")
   end
 
+  it "reports an error and reaches no verdict when a subject fetch fails" do
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
+          subject: failing_pull_request(status: 500, message: "Subject boom")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"])
+
+    result.stderr.to_s.should contain("Error evaluating notifications")
+    result.stderr.to_s.should contain("Subject boom")
+    result.stdout.to_s.should_not contain("KEEPING")
+    result.stdout.to_s.should_not contain("REMOVING")
+  end
+
   it "rejects stubbing the same endpoint twice in a block" do
     expect_raises(Exception, /already stubbed/) do
       APIStub::GitHub.stub do

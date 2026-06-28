@@ -10,14 +10,6 @@ module Shoo
       def initialize(@value : T | E)
       end
 
-      def ok? : T?
-        unwrap_or(nil)
-      end
-
-      def unwrap_or(default : U) : T | U forall U
-        unwrap_or { default }
-      end
-
       def unwrap_or(& : E -> U) : T | U forall U
         case value = @value
         in T

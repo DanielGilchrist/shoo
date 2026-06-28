@@ -13,6 +13,10 @@ module APIStub
         Data.pull_request(**args)
       end
 
+      def failing_pull_request(**args)
+        Data.failing_pull_request(**args)
+      end
+
       def issue(**args)
         Data.issue(**args)
       end
