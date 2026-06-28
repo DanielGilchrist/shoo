@@ -3,6 +3,11 @@ module Shoo
     abstract def token : GitHub::Token?
     abstract def refresh(scope : String) : Bool
 
+    def token_source : TokenSource?
+      resolved = token
+      TokenSource::GitHubCli.new(resolved) if resolved
+    end
+
     def self.detect : GhCli?
       System.detect
     end

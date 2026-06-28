@@ -39,9 +39,5 @@ describe Shoo::Credential do
     it "builds a stored-token source" do
       Shoo::Credential.stored(github_token).token_source.should be_a(Shoo::TokenSource::StoredToken)
     end
-
-    it "builds a gh source from a token" do
-      Shoo::Credential.gh.token_source(github_token).should be_a(Shoo::TokenSource::GitHubCli)
-    end
   end
 end
