@@ -11,8 +11,7 @@ module Shoo
         identity = verify(token)
 
         unless identity.scopes.permits_notifications?
-          warn_missing_scope
-          stdout.puts "  Create one with that scope at #{TOKEN_URL.colorize.blue}"
+          return @context.abort!("That token lacks the `#{REQUIRED_SCOPE}` scope (needed to read and dismiss notifications). Create one at #{TOKEN_URL}")
         end
 
         store(Credential.stored(token), identity)

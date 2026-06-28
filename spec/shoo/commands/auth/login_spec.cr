@@ -80,4 +80,15 @@ describe Shoo::Commands::Auth::Login do
 
     result.stderr.to_s.should contain("Could not verify token")
   end
+
+  it "aborts without storing when a provided token lacks the notifications scope" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat", scopes: "gist")
+    end
+
+    result = run(["auth", "login", "--token", "ghp_unscoped"], config_fixture: "no_token")
+
+    result.stderr.to_s.should contain("lacks the `notifications` scope")
+    result.credential.should be_nil
+  end
 end
