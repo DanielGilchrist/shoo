@@ -19,7 +19,7 @@ describe Shoo::Commands::Auth::Status do
       user.identity(login: "octocat")
     end
 
-    result = run(["auth", "status"], config_fixture: "no_token", env: {"SHOO_GITHUB_TOKEN" => "ghp_env"})
+    result = run(["auth", "status"], config_fixture: :no_token, env: {"SHOO_GITHUB_TOKEN" => "ghp_env"})
 
     result.stdout.to_s.should contain("environment variable $SHOO_GITHUB_TOKEN")
   end
@@ -41,7 +41,7 @@ describe Shoo::Commands::Auth::Status do
 
     result = run(
       ["auth", "status"],
-      config_fixture: "no_token",
+      config_fixture: :no_token,
       env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
       credential: github_cli_credential,
     )
@@ -57,7 +57,7 @@ describe Shoo::Commands::Auth::Status do
     end
 
     gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
-    result = run(["auth", "status"], config_fixture: "no_token", credential: github_cli_credential, gh: gh)
+    result = run(["auth", "status"], config_fixture: :no_token, credential: github_cli_credential, gh: gh)
 
     result.stdout.to_s.should contain("GitHub CLI (gh)")
   end
@@ -67,19 +67,19 @@ describe Shoo::Commands::Auth::Status do
       user.identity(login: "octocat")
     end
 
-    result = run(["auth", "status"], config_fixture: "no_token", credential: token_credential)
+    result = run(["auth", "status"], config_fixture: :no_token, credential: token_credential)
 
     result.stdout.to_s.should contain("stored token")
   end
 
   it "is not logged in when a gh credential has no cli available" do
-    result = run(["auth", "status"], config_fixture: "no_token", credential: github_cli_credential, gh: nil)
+    result = run(["auth", "status"], config_fixture: :no_token, credential: github_cli_credential, gh: nil)
 
     result.stdout.to_s.should contain("Not logged in")
   end
 
   it "reports when not logged in" do
-    result = run(["auth", "status"], config_fixture: "no_token")
+    result = run(["auth", "status"], config_fixture: :no_token)
 
     result.stdout.to_s.should contain("Not logged in")
   end

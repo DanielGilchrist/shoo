@@ -1,4 +1,10 @@
 module ConfigFixtures
+  enum Name
+    Default
+    EnvToken
+    NoToken
+  end
+
   DEFAULT = <<-YAML
     github:
       token: "ghp_faketoken"
@@ -32,12 +38,11 @@ module ConfigFixtures
               always: true
     YAML
 
-  def self.fetch(name : String) : String
+  def self.fetch(name : Name) : String
     case name
-    when "default"   then DEFAULT
-    when "env_token" then ENV_TOKEN
-    when "no_token"  then NO_TOKEN
-    else                  raise "unknown config fixture: #{name}"
+    in .default?   then DEFAULT
+    in .env_token? then ENV_TOKEN
+    in .no_token?  then NO_TOKEN
     end
   end
 end

@@ -15,7 +15,7 @@ end
 
 def run(
   args : Array(String),
-  config_fixture : String = "default",
+  config_fixture : ConfigFixtures::Name = ConfigFixtures::Name::Default,
   config_store : Shoo::Config::Store? = nil,
   env : Hash(String, String) = {} of String => String,
   stdin : IO = IO::Memory.new,
