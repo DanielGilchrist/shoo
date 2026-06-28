@@ -3,6 +3,7 @@ module Shoo
     struct Client
       struct Request
         @headers : HTTP::Headers
+        @pool : ConnectionPool
 
         alias TBody = Hash(String, String)
 
@@ -12,10 +13,11 @@ module Shoo
 
         def initialize(token : Token)
           @headers = build_headers(token)
+          @pool = ConnectionPool.new(GITHUB_HOST)
         end
 
         def get(type : T.class, path : String, query : TBody = TBody.new) : Result(T) forall T
-          response = HTTP::Client.get(build_uri(path, query), headers: @headers)
+          response = @pool.checkout { |client| client.get(full_path(path, query), headers: @headers) }
           Result(T).from(response)
         end
 
@@ -25,7 +27,7 @@ module Shoo
         end
 
         def identity(path : String = "/user") : Identity | Error
-          response = HTTP::Client.get(build_uri(path), headers: @headers)
+          response = @pool.checkout(&.get(path, headers: @headers))
 
           if response.success?
             Identity.new(
@@ -38,13 +40,14 @@ module Shoo
         end
 
         def delete(path : String) : Bool
-          response = HTTP::Client.delete(build_uri(path), headers: @headers)
+          response = @pool.checkout(&.delete(path, headers: @headers))
           response.success?
         end
 
-        private def build_uri(path : String, query : TBody = TBody.new) : URI
-          params = URI::Params.encode(query)
-          URI.new(HTTPS, GITHUB_HOST, path: path, query: params)
+        private def full_path(path : String, query : TBody) : String
+          return path if query.empty?
+
+          "#{path}?#{URI::Params.encode(query)}"
         end
 
         private def build_headers(token : Token) : HTTP::Headers
