@@ -23,26 +23,43 @@ module Shoo
 
       private def display_keeping(io : IO, keeping : Array(Notification::Kept)) : Nil
         io.puts "\n--- KEEPING (#{keeping.size}) ---".colorize.green.bold
+        return if keeping.empty?
 
-        width = Formatting.reason_width(keeping)
+        width = column_width(keeping.map(&.keep_reason.label), "Why kept")
+        io.puts header("Why kept", width)
 
         keeping.each do |notification|
-          reason = Formatting.colourised_reason(notification.reason, width)
-          io.puts "#{reason} | #{notification.subject.title}"
+          io.puts "#{notification.keep_reason.colourise(width)} | #{notification.subject.title}"
         end
       end
 
       private def display_removing(io : IO, removing : Array(Notification::Purged)) : Nil
         io.puts "\n--- REMOVING (#{removing.size}) ---".colorize.red.bold
+        return if removing.empty?
 
-        reason_width = Formatting.reason_width(removing)
-        purge_reason_width = Formatting.purge_reason_width(removing)
+        width = column_width(removing.map { |notification| purge_label(notification) }, "Why purged")
+        io.puts header("Why purged", width)
 
         removing.each do |notification|
-          reason = Formatting.colourised_reason(notification.reason, reason_width)
-          tag = Formatting.colourised_purge_reason(notification.purge_reason, purge_reason_width)
-          io.puts "#{reason} | #{tag} | #{notification.subject.title}"
+          tag = notification.purge_reason.paint(purge_label(notification).ljust(width))
+          io.puts "#{tag} | #{notification.subject.title}"
         end
+      end
+
+      private def purge_label(notification : Notification::Purged) : String
+        purge_reason = notification.purge_reason
+        return purge_reason.label unless purge_reason.filtered?
+
+        "#{notification.reason.description} → #{purge_reason.label}"
+      end
+
+      private def column_width(labels : Array(String), header : String) : Int32
+        ([header.size] + labels.map(&.size)).max
+      end
+
+      private def header(label : String, width : Int32) : String
+        row = "#{label.ljust(width)} | Title"
+        "#{row.colorize.bold}\n#{("─" * row.size).colorize.dark_gray}"
       end
     end
   end

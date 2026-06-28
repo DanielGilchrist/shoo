@@ -12,7 +12,7 @@ module Shoo
 
         io.puts summary(@notifications.size, groups.size)
 
-        reason_width = Formatting.reason_width(@notifications)
+        reason_width = @notifications.max_of?(&.reason.to_s.size) || 0
 
         groups.each do |repository_name, notifications|
           io.puts
@@ -21,7 +21,7 @@ module Shoo
           notifications
             .sort_by { |notification| {notification.reason.to_s, notification.subject.title} }
             .each do |notification|
-              reason = Formatting.colourised_reason(notification.reason, reason_width)
+              reason = notification.reason.colourise(reason_width)
               io.puts "  #{reason}  #{notification.subject.title}"
             end
         end
