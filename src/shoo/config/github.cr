@@ -12,14 +12,17 @@ module Shoo
 
       def token_source(env : Env) : Authentication::TokenSource?
         configured = @config_token
+        literal = configured if configured && configured.starts_with?(GITHUB_TOKEN_PREFIX)
+        custom_variable = literal ? nil : configured
 
-        if configured && configured.starts_with?(GITHUB_TOKEN_PREFIX)
-          token = GitHub::Token.parse?(configured)
-          return Authentication::TokenSource::ConfigFile.new(token) if token
+        if lookup = env.github_token(from: custom_variable)
+          return Authentication::TokenSource::Environment.new(lookup.token, lookup.name)
         end
 
-        lookup = env.github_token(from: configured)
-        Authentication::TokenSource::Environment.new(lookup.token, lookup.name) if lookup
+        return unless literal
+
+        token = GitHub::Token.parse?(literal)
+        Authentication::TokenSource::ConfigFile.new(token) if token
       end
     end
   end

@@ -24,6 +24,16 @@ describe Shoo::Commands::Auth::Status do
     result.stdout.to_s.should contain("environment variable $SHOO_GITHUB_TOKEN")
   end
 
+  it "lets an environment variable override a config-file token" do
+    APIStub::GitHub.stub do
+      user.identity(login: "octocat")
+    end
+
+    result = run(["auth", "status"], env: {"SHOO_GITHUB_TOKEN" => "ghp_env"})
+
+    result.stdout.to_s.should contain("environment variable $SHOO_GITHUB_TOKEN")
+  end
+
   it "flags when an env var overrides a stored credential" do
     APIStub::GitHub.stub do
       user.identity(login: "octocat")
