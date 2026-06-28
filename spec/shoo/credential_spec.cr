@@ -11,7 +11,7 @@ describe Shoo::Authentication::Credential do
     end
 
     it "parses a stored token" do
-      memory_store("provider: token\ntoken: ghp_stored\n").load.should be_a(Shoo::Authentication::Credential::Stored)
+      memory_store("provider: token\ntoken: ghp_stored\n").load.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
     end
 
     it "ignores a token provider with no token" do
@@ -29,15 +29,15 @@ describe Shoo::Authentication::Credential do
 
     it "round-trips a stored token" do
       store = memory_store
-      store.save(Shoo::Authentication::Credential.stored(github_token("ghp_round")))
+      store.save(Shoo::Authentication::Credential.personal_access_token(github_token("ghp_round")))
 
-      store.load.should be_a(Shoo::Authentication::Credential::Stored)
+      store.load.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
     end
   end
 
   describe "#token_source" do
     it "builds a stored-token source" do
-      Shoo::Authentication::Credential.stored(github_token).token_source.should be_a(Shoo::Authentication::TokenSource::StoredToken)
+      Shoo::Authentication::Credential.personal_access_token(github_token).token_source.should be_a(Shoo::Authentication::TokenSource::StoredToken)
     end
   end
 end

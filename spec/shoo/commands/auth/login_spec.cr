@@ -6,10 +6,10 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    result = run(["auth", "login", "--token", "ghp_new"], config_fixture: "no_token")
+    result = run(["auth", "login", "--token", "ghp_new"], config_fixture: :no_token)
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
   end
 
   it "logs in through the gh CLI" do
@@ -18,7 +18,7 @@ describe Shoo::Commands::Auth::Login do
     end
 
     gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
-    result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("1"), gh: gh, config_fixture: :no_token)
 
     output = result.stdout.to_s
     output.should contain("GitHub CLI (gh)")
@@ -32,7 +32,7 @@ describe Shoo::Commands::Auth::Login do
     end
 
     gh = Shoo::Authentication::GitHubCLIMock.new(token_after_login: github_token("ghp_gh"))
-    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: :no_token)
 
     output = result.stdout.to_s
     output.should contain("Connected as @octocat")
@@ -42,7 +42,7 @@ describe Shoo::Commands::Auth::Login do
 
   it "aborts when the user declines to sign into gh" do
     gh = Shoo::Authentication::GitHubCLIMock.new
-    result = run(["auth", "login"], stdin: build_stdin("1", "n"), gh: gh, config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("1", "n"), gh: gh, config_fixture: :no_token)
 
     result.stderr.to_s.should contain("gh auth login")
     gh.logins.should eq(0)
@@ -55,7 +55,7 @@ describe Shoo::Commands::Auth::Login do
     end
 
     gh = Shoo::Authentication::GitHubCLIMock.new(token: github_token("ghp_gh"))
-    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("1", "y"), gh: gh, config_fixture: :no_token)
 
     output = result.stdout.to_s
     output.should contain("lacks the `notifications` scope")
@@ -68,14 +68,14 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "notifications")
     end
 
-    result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("1", "ghp_pasted"), config_fixture: :no_token)
 
     result.stdout.to_s.should contain("Connected as @octocat")
-    result.credential.should be_a(Shoo::Authentication::Credential::Stored)
+    result.credential.should be_a(Shoo::Authentication::Credential::PersonalAccessToken)
   end
 
   it "explains the environment variable option" do
-    result = run(["auth", "login"], stdin: build_stdin("2"), config_fixture: "no_token")
+    result = run(["auth", "login"], stdin: build_stdin("2"), config_fixture: :no_token)
 
     result.stdout.to_s.should contain("export SHOO_GITHUB_TOKEN")
   end
@@ -87,7 +87,7 @@ describe Shoo::Commands::Auth::Login do
 
     result = run(
       ["auth", "login", "--token", "ghp_new"],
-      config_fixture: "no_token",
+      config_fixture: :no_token,
       env: {"SHOO_GITHUB_TOKEN" => "ghp_env"},
     )
 
@@ -99,7 +99,7 @@ describe Shoo::Commands::Auth::Login do
       user.identity(status: 401)
     end
 
-    result = run(["auth", "login", "--token", "ghp_bad"], config_fixture: "no_token")
+    result = run(["auth", "login", "--token", "ghp_bad"], config_fixture: :no_token)
 
     result.stderr.to_s.should contain("Could not verify token")
   end
@@ -109,7 +109,7 @@ describe Shoo::Commands::Auth::Login do
       user.identity(login: "octocat", scopes: "gist")
     end
 
-    result = run(["auth", "login", "--token", "ghp_unscoped"], config_fixture: "no_token")
+    result = run(["auth", "login", "--token", "ghp_unscoped"], config_fixture: :no_token)
 
     result.stderr.to_s.should contain("lacks the `notifications` scope")
     result.credential.should be_nil

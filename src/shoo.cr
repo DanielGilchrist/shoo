@@ -25,19 +25,19 @@ module Shoo
     stdin : IO,
     stdout : IO,
     stderr : IO,
-    config_path : String,
+    config_store : Config::Store,
     credential_store : Authentication::CredentialStore,
     env : Env,
     gh : Authentication::GitHubCLI?,
   ) : Context
-    context = build_context(config_path, credential_store, env, gh, stdin, stdout, stderr)
+    context = build_context(config_store, credential_store, env, gh, stdin, stdout, stderr)
     dispatch(args, context)
     context
   end
 
-  private def build_context(config_path : String, credential_store : Authentication::CredentialStore, env : Env, gh : Authentication::GitHubCLI?, stdin : IO, stdout : IO, stderr : IO) : Context
+  private def build_context(config_store : Config::Store, credential_store : Authentication::CredentialStore, env : Env, gh : Authentication::GitHubCLI?, stdin : IO, stdout : IO, stderr : IO) : Context
     config =
-      case loaded = Config.load(config_path)
+      case loaded = Config.load(config_store)
       in Config
         loaded
       in Array(Config::Error)
@@ -47,7 +47,7 @@ module Shoo
       end
 
     credential = credential_store.load
-    Context.new(config, env, credential, gh, credential_store, stdout, stderr, stdin)
+    Context.new(config, config_store, env, credential, gh, credential_store, stdout, stderr, stdin)
   end
 
   private def dispatch(args : Array(String), context : Context) : Nil

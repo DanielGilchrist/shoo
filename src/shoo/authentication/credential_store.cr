@@ -4,7 +4,7 @@ module Shoo
       abstract def read : String?
       abstract def write(content : String) : Nil
       abstract def clear : Nil
-      abstract def present? : Bool
+      abstract def exists? : Bool
 
       def load : Credential?
         raw = read

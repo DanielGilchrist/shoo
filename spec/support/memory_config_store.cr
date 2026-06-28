@@ -1,4 +1,4 @@
-class Shoo::Authentication::CredentialStore::InMemory < Shoo::Authentication::CredentialStore
+class Shoo::Config::Store::InMemory < Shoo::Config::Store
   def initialize(@content : String? = nil)
   end
 
@@ -10,11 +10,11 @@ class Shoo::Authentication::CredentialStore::InMemory < Shoo::Authentication::Cr
     @content = content
   end
 
-  def clear : Nil
-    @content = nil
-  end
-
   def exists? : Bool
     !@content.nil?
+  end
+
+  def path : String
+    "(memory)"
   end
 end

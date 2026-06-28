@@ -5,35 +5,29 @@ module Shoo
         GitHubCLI.new
       end
 
-      def self.stored(token : GitHub::Token) : Stored
-        Stored.new(token)
+      def self.personal_access_token(token : GitHub::Token) : PersonalAccessToken
+        PersonalAccessToken.new(token)
       end
 
       def self.parse(raw : String) : Credential?
         data = Raw.from_yaml(raw)
+        provider = data.provider
+        return nil unless provider
 
-        case data.provider
-        when "gh"
-          GitHubCLI.new
-        when "token"
-          token = GitHub::Token.parse?(data.token)
-          Stored.new(token) if token
+        case provider
+        in .gh?    then GitHubCLI.new
+        in .token? then from_token(data.token)
         end
       rescue YAML::ParseException
         nil
       end
 
-      abstract def to_raw : Raw
-
-      struct Raw
-        include YAML::Serializable
-
-        getter provider : String
-        getter token : String?
-
-        def initialize(@provider : String, @token : String? = nil)
-        end
+      private def self.from_token(value : String?) : PersonalAccessToken?
+        token = GitHub::Token.parse?(value)
+        PersonalAccessToken.new(token) if token
       end
+
+      abstract def to_raw : Raw
     end
   end
 end

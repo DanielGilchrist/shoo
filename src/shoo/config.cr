@@ -1,7 +1,7 @@
 module Shoo
   struct Config
-    def self.load(path : String = Raw::CONFIG_PATH) : Config | Array(Error)
-      raw = Raw.load(path)
+    def self.load(store : Store = Store::FileSystem.new) : Config | Array(Error)
+      raw = Raw.parse(store.read)
 
       notifications = Notifications.parse(raw.notifications)
       return notifications if notifications.is_a?(Array(Error))

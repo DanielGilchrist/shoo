@@ -130,7 +130,7 @@ describe Shoo::Commands::List do
   end
 
   it "errors when no GitHub token is configured" do
-    result = run(["notification", "list"], config_fixture: "no_token")
+    result = run(["notification", "list"], config_fixture: :no_token)
 
     result.stderr.to_s.should contain("Not authenticated")
   end
@@ -142,7 +142,7 @@ describe Shoo::Commands::List do
       )
     end
 
-    result = run(["notification", "list"], config_fixture: "env_token", env: {"GH_TOKEN" => "ghp_fromenv"})
+    result = run(["notification", "list"], config_fixture: :env_token, env: {"GH_TOKEN" => "ghp_fromenv"})
 
     result.stdout.to_s.should contain("From env token")
   end

@@ -34,9 +34,9 @@ module Shoo
           return unless choice
 
           case choice
-          in Choice::GitHubCLI           then sign_in.via_github_cli
-          in Choice::PasteToken          then sign_in.via_pasted_token
-          in Choice::EnvironmentVariable then sign_in.via_environment_variable
+          in .git_hub_cli?          then sign_in.via_github_cli
+          in .paste_token?          then sign_in.via_pasted_token
+          in .environment_variable? then sign_in.via_environment_variable
           end
         end
 
@@ -48,9 +48,9 @@ module Shoo
 
         private def label(choice : Choice) : String
           case choice
-          in Choice::GitHubCLI           then "GitHub CLI (gh)  #{"← recommended".colorize.dark_gray}"
-          in Choice::PasteToken          then "Paste a personal access token"
-          in Choice::EnvironmentVariable then "Use an environment variable"
+          in .git_hub_cli?          then "GitHub CLI (gh)  #{"← recommended".colorize.dark_gray}"
+          in .paste_token?          then "Paste a personal access token"
+          in .environment_variable? then "Use an environment variable"
           end
         end
 

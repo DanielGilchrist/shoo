@@ -1,8 +1,10 @@
 module Shoo
-  module Authentication
-    abstract class CredentialStore
-      class FileSystem < CredentialStore
-        PATH = "#{Path.home}/.config/shoo/credentials"
+  struct Config
+    abstract class Store
+      class FileSystem < Store
+        PATH = "#{Path.home}/.config/shoo/config.yml"
+
+        getter path : String
 
         def initialize(@path : String = PATH)
         end
@@ -13,11 +15,7 @@ module Shoo
 
         def write(content : String) : Nil
           Dir.mkdir_p(File.dirname(@path))
-          File.write(@path, content, perm: 0o600)
-        end
-
-        def clear : Nil
-          File.delete(@path) if exists?
+          File.write(@path, content)
         end
 
         def exists? : Bool
