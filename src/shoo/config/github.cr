@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     struct Github
       GITHUB_TOKEN_PREFIX = "ghp_"
 

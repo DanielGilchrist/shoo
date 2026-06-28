@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     class Error < Exception
       module SlugError
         extend self

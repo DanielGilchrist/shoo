@@ -1,5 +1,5 @@
 module Shoo
-  class Config
+  struct Config
     def self.load(path : String = Raw::CONFIG_PATH) : Config | Array(Error)
       raw = Raw.load(path)
 
