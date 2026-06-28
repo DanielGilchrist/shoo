@@ -21,18 +21,14 @@ module Shoo
         end
 
         @token : GitHub::Token?
-        @token_resolved = false
 
         def token : GitHub::Token?
-          return @token if @token_resolved
-
-          @token_resolved = true
-          @token = GitHub::Token.parse?(capture("auth", "token"))
+          @token ||= GitHub::Token.parse?(capture("auth", "token"))
         end
 
         def refresh(scope : String) : Bool
           success = interactive("auth", "refresh", "-s", scope)
-          @token_resolved = false if success
+          @token = nil if success
           success
         end
 

@@ -12,14 +12,10 @@ module Shoo
     end
 
     @token_source : Authentication::TokenSource?
-    @token_source_resolved = false
     @client : GitHub::Client?
 
     def token_source : Authentication::TokenSource?
-      return @token_source if @token_source_resolved
-
-      @token_source_resolved = true
-      @token_source = @config.github.token_source(@env) || credential_source
+      @token_source ||= @config.github.token_source(@env) || credential_source
     end
 
     def client : GitHub::Client
