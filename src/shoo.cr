@@ -28,7 +28,7 @@ module Shoo
     config_path : String = Config::Raw::CONFIG_PATH,
     credential_store : Authentication::CredentialStore = Authentication::CredentialStore::OnDisk.new,
     env : Env = Env.load,
-    gh : Authentication::GitHubCLI? = Authentication::GitHubCLI.detect,
+    gh : Authentication::GitHubCLI? = Authentication::GitHubCLI.find,
   ) : Context
     context = build_context(config_path, credential_store, env, gh, stdin, stdout, stderr)
     dispatch(args, context)

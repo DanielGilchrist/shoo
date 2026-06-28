@@ -1,6 +1,10 @@
 module Shoo
   module Authentication
     abstract class GitHubCLI
+      def self.find : GitHubCLI?
+        System.find
+      end
+
       abstract def token : GitHub::Token?
       abstract def refresh(scope : String) : Bool
 
@@ -9,19 +13,15 @@ module Shoo
         TokenSource::GitHubCLI.new(resolved) if resolved
       end
 
-      def self.detect : GitHubCLI?
-        System.detect
-      end
-
       private class System < GitHubCLI
         COMMAND = "gh"
 
-        @token : GitHub::Token?
-        @token_resolved = false
-
-        def self.detect : GitHubCLI?
+        def self.find : GitHubCLI?
           Process.find_executable(COMMAND) ? new : nil
         end
+
+        @token : GitHub::Token?
+        @token_resolved = false
 
         def token : GitHub::Token?
           return @token if @token_resolved
