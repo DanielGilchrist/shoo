@@ -14,7 +14,7 @@ class Shoo::Authentication::CredentialStore::InMemory < Shoo::Authentication::Cr
     @content = nil
   end
 
-  def present? : Bool
+  def exists? : Bool
     !@content.nil?
   end
 end

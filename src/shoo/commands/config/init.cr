@@ -11,7 +11,7 @@ module Shoo
         def run(context : Context) : Nil
           store = context.config_store
 
-          if store.present? && !force?
+          if store.exists? && !force?
             return context.abort!("A config already exists at #{store.path}. Edit it, or pass --force to overwrite.")
           end
 

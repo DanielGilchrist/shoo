@@ -10,7 +10,7 @@ class Shoo::Config::Store::InMemory < Shoo::Config::Store
     @content = content
   end
 
-  def present? : Bool
+  def exists? : Bool
     !@content.nil?
   end
 

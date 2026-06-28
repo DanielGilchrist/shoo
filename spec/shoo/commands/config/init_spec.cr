@@ -6,7 +6,7 @@ describe Shoo::Commands::Config::Init do
     result = run(["config", "init"], config_store: store)
 
     result.stdout.to_s.should contain("Initialised config")
-    store.present?.should be_true
+    store.exists?.should be_true
     Shoo::Config.load(store).should be_a(Shoo::Config)
   end
 

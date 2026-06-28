@@ -8,7 +8,7 @@ module Shoo
         end
 
         def read : String?
-          File.read(@path) if File.exists?(@path)
+          File.read(@path) if exists?
         end
 
         def write(content : String) : Nil
@@ -17,10 +17,10 @@ module Shoo
         end
 
         def clear : Nil
-          File.delete(@path) if File.exists?(@path)
+          File.delete(@path) if exists?
         end
 
-        def present? : Bool
+        def exists? : Bool
           File.exists?(@path)
         end
       end

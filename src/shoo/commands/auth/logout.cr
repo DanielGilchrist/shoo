@@ -8,7 +8,7 @@ module Shoo
         def run(context : Context) : Nil
           store = context.credential_store
 
-          unless store.present?
+          unless store.exists?
             return context.stdout.puts("No stored credentials to remove.")
           end
 
