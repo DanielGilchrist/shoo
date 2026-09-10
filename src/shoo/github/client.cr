@@ -1,7 +1,7 @@
 module Shoo
   module GitHub
     struct Client
-      def initialize(token : Token)
+      def initialize(token : Token) : Nil
         @request = Request.new(token)
       end
 

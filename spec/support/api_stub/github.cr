@@ -15,7 +15,7 @@ module APIStub
       "#{BASE_URL}#{path}"
     end
 
-    def self.stub(&)
+    def self.stub(& : ->) : Nil
       with Builder.new yield
     end
   end

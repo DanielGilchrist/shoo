@@ -15,7 +15,7 @@ module Shoo
 
       getter keep_reason : KeepReason
 
-      def initialize(@github_notification : GitHub::Notification, @keep_reason : KeepReason)
+      def initialize(@github_notification : GitHub::Notification, @keep_reason : KeepReason) : Nil
       end
     end
 
@@ -24,7 +24,7 @@ module Shoo
 
       getter purge_reason : PurgeReason
 
-      def initialize(@github_notification : GitHub::Notification, @purge_reason : PurgeReason)
+      def initialize(@github_notification : GitHub::Notification, @purge_reason : PurgeReason) : Nil
       end
     end
   end

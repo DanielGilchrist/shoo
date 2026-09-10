@@ -27,7 +27,7 @@ module Shoo
             end
 
             struct After < StateRule
-              def initialize(@duration : Duration)
+              def initialize(@duration : Duration) : Nil
               end
 
               getter duration : Duration

@@ -11,7 +11,7 @@ module Shoo
         GITHUB_HOST = "api.github.com"
         BASE_URL    = "#{HTTPS}://#{GITHUB_HOST}"
 
-        def initialize(token : Token)
+        def initialize(token : Token) : Nil
           @headers = build_headers(token)
           @pool = ConnectionPool.new(GITHUB_HOST)
         end

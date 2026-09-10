@@ -8,7 +8,7 @@ module Shoo
         new(purge)
       end
 
-      private def initialize(@purge : Purge)
+      private def initialize(@purge : Purge) : Nil
       end
 
       getter purge : Purge

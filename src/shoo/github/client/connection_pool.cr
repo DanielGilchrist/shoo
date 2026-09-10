@@ -7,7 +7,7 @@ module Shoo
       struct ConnectionPool
         DEFAULT_SIZE = 25
 
-        def initialize(host : String, size : Int32 = DEFAULT_SIZE)
+        def initialize(host : String, size : Int32 = DEFAULT_SIZE) : Nil
           # Clients connect lazily, so idle pool entries cost nothing; share one TLS
           # context across them rather than allocating one per client.
           tls = OpenSSL::SSL::Context::Client.new

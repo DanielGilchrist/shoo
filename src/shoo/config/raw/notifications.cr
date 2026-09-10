@@ -6,7 +6,7 @@ module Shoo
 
         getter purge : Purge = Purge.new
 
-        def initialize
+        def initialize : Nil
         end
       end
     end

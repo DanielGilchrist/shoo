@@ -7,7 +7,7 @@ module Shoo
         @[YAML::Field(key: "token")]
         getter config_token : String?
 
-        def initialize
+        def initialize : Nil
         end
       end
     end

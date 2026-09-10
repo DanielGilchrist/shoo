@@ -2,7 +2,7 @@ module Shoo
   module Authentication
     abstract struct TokenSource
       struct Environment < TokenSource
-        def initialize(@token : GitHub::Token, @name : String)
+        def initialize(@token : GitHub::Token, @name : String) : Nil
         end
 
         def describe : String

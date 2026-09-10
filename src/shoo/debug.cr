@@ -2,12 +2,12 @@ require "log"
 
 module Shoo
   module Debug
-    def self.setup
+    def self.setup : Nil
       Log.setup(:debug, Backend.new)
     end
 
     class Backend < Log::IOBackend
-      def write(entry : Log::Entry)
+      def write(entry : Log::Entry) : Nil
         puts "\n"
         pp "================================= DEBUG ================================="
         puts entry.message.colorize.yellow
@@ -24,7 +24,7 @@ module Shoo
         puts "\n"
       end
 
-      private def http_debug_message?(entry : Log::Entry)
+      private def http_debug_message?(entry : Log::Entry) : Bool
         entry.message == "Performing request"
       end
     end

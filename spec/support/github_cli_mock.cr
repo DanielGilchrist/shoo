@@ -2,7 +2,7 @@ class Shoo::Authentication::GitHubCLIMock < Shoo::Authentication::GitHubCLI
   getter refreshed : Array(String)
   getter logins : Int32
 
-  def initialize(@token : Shoo::GitHub::Token? = nil, @refresh_succeeds : Bool = true, @token_after_login : Shoo::GitHub::Token? = nil)
+  def initialize(@token : Shoo::GitHub::Token? = nil, @refresh_succeeds : Bool = true, @token_after_login : Shoo::GitHub::Token? = nil) : Nil
     @refreshed = [] of String
     @logins = 0
   end

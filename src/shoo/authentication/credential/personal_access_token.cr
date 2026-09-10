@@ -4,7 +4,7 @@ module Shoo
       struct PersonalAccessToken < Credential
         getter token : GitHub::Token
 
-        def initialize(@token : GitHub::Token)
+        def initialize(@token : GitHub::Token) : Nil
         end
 
         def to_raw : Raw

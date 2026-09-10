@@ -7,7 +7,7 @@ module Shoo
         new(raw.config_token)
       end
 
-      private def initialize(@config_token : String?)
+      private def initialize(@config_token : String?) : Nil
       end
 
       def token_source(env : Env) : Authentication::TokenSource?

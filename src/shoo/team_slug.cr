@@ -8,7 +8,7 @@ module Shoo
       new(value)
     end
 
-    private def initialize(@value : String)
+    private def initialize(@value : String) : Nil
     end
 
     getter value : String

@@ -1,6 +1,6 @@
 module Shoo
   struct Prompt
-    def initialize(@stdin : IO, @stdout : IO)
+    def initialize(@stdin : IO, @stdout : IO) : Nil
     end
 
     def choose(message : String, options : Array(T), & : T -> String) : T? forall T

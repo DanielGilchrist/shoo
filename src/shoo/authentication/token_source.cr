@@ -3,7 +3,7 @@ module Shoo
     abstract struct TokenSource
       getter token : GitHub::Token
 
-      def initialize(@token : GitHub::Token)
+      def initialize(@token : GitHub::Token) : Nil
       end
 
       abstract def describe : String

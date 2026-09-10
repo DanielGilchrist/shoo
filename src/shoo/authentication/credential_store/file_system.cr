@@ -4,7 +4,7 @@ module Shoo
       class FileSystem < CredentialStore
         PATH = "#{Path.home}/.config/shoo/credentials"
 
-        def initialize(@path : String = PATH)
+        def initialize(@path : String = PATH) : Nil
         end
 
         def read : String?

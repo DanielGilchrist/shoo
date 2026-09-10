@@ -1,7 +1,7 @@
 module Shoo
   module Representers
     struct NotificationVerdict
-      def initialize(@results : Array(Notification::Any))
+      def initialize(@results : Array(Notification::Any)) : Nil
       end
 
       def display(io : IO) : Nil

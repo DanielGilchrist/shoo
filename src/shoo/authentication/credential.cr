@@ -12,7 +12,7 @@ module Shoo
       def self.parse(raw : String) : Credential?
         data = Raw.from_yaml(raw)
         provider = data.provider
-        return nil unless provider
+        return unless provider
 
         case provider
         in .gh?    then GitHubCLI.new

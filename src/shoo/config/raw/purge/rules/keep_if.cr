@@ -12,7 +12,7 @@ module Shoo
             getter authors : Array(String) = [] of String
             getter? mentioned : Bool = false
 
-            def initialize
+            def initialize : Nil
             end
           end
         end

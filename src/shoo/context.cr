@@ -9,7 +9,17 @@ module Shoo
     getter stderr : IO
     getter stdin : IO
 
-    def initialize(@config, @config_store : Config::Store, @env : Env, @credential, @gh, @credential_store, @stdout, @stderr, @stdin)
+    def initialize(
+      @config : Config,
+      @config_store : Config::Store,
+      @env : Env,
+      @credential : Authentication::Credential?,
+      @gh : Authentication::GitHubCLI?,
+      @credential_store : Authentication::CredentialStore,
+      @stdout : IO,
+      @stderr : IO,
+      @stdin : IO,
+    ) : Nil
     end
 
     @token_source : Tuple(Authentication::TokenSource?)?

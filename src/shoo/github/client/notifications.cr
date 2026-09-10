@@ -2,7 +2,7 @@ module Shoo
   module GitHub
     struct Client
       struct Notifications
-        def initialize(@request : Request)
+        def initialize(@request : Request) : Nil
         end
 
         def all(per_page : Int32 = 50) : Result(Array(Notification))

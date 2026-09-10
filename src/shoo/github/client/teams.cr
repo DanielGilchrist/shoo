@@ -2,7 +2,7 @@ module Shoo
   module GitHub
     struct Client
       struct Teams
-        def initialize(@request : Request)
+        def initialize(@request : Request) : Nil
         end
 
         def members(organisation_name : String, team_slug : String) : Result(Array(User))

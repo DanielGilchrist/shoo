@@ -12,7 +12,7 @@ module Shoo
         new(names)
       end
 
-      def initialize(@names : Set(String))
+      def initialize(@names : Set(String)) : Nil
       end
 
       def permits_notifications? : Bool

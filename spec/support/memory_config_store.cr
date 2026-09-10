@@ -1,5 +1,5 @@
 class Shoo::Config::Store::InMemory < Shoo::Config::Store
-  def initialize(@content : String? = nil)
+  def initialize(@content : String? = nil) : Nil
   end
 
   def read : String?

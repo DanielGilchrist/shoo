@@ -21,7 +21,7 @@ module Shoo
             new(merged, closed)
           end
 
-          private def initialize(@merged : StateRule?, @closed : StateRule?)
+          private def initialize(@merged : StateRule?, @closed : StateRule?) : Nil
           end
 
           getter merged : StateRule?

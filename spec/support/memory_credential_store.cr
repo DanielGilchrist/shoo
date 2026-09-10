@@ -1,5 +1,5 @@
 class Shoo::Authentication::CredentialStore::InMemory < Shoo::Authentication::CredentialStore
-  def initialize(@content : String? = nil)
+  def initialize(@content : String? = nil) : Nil
   end
 
   def read : String?

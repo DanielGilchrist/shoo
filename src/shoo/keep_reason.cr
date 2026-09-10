@@ -6,7 +6,7 @@ module Shoo
     struct AlwaysKept < KeepReason
       getter reason : GitHub::NotificationReason
 
-      def initialize(@reason : GitHub::NotificationReason)
+      def initialize(@reason : GitHub::NotificationReason) : Nil
       end
 
       def label : String
@@ -31,7 +31,7 @@ module Shoo
     struct Author < KeepReason
       getter login : String
 
-      def initialize(@login : String)
+      def initialize(@login : String) : Nil
       end
 
       def label : String
@@ -46,7 +46,7 @@ module Shoo
     abstract struct TeamReason < KeepReason
       getter team : String
 
-      def initialize(@team : String)
+      def initialize(@team : String) : Nil
       end
 
       def colourise(width : Int32) : String

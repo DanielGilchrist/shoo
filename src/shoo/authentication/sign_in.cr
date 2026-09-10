@@ -4,7 +4,7 @@ module Shoo
       REQUIRED_SCOPE = "notifications"
       TOKEN_URL      = "https://github.com/settings/tokens/new?scopes=notifications&description=shoo"
 
-      def initialize(@context : Context)
+      def initialize(@context : Context) : Nil
       end
 
       def with_token(token : GitHub::Token) : Nil

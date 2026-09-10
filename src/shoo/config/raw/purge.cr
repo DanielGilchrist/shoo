@@ -7,7 +7,7 @@ module Shoo
         getter global : Rules = Rules.new
         getter repos : Hash(String, Rules) = Hash(String, Rules).new
 
-        def initialize
+        def initialize : Nil
         end
       end
     end

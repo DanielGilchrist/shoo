@@ -9,7 +9,7 @@ module Shoo
           getter purge_if : PurgeIf = PurgeIf.new
           getter? unsubscribe : Bool = false
 
-          def initialize
+          def initialize : Nil
           end
         end
       end

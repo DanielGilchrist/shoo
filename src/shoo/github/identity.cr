@@ -4,7 +4,7 @@ module Shoo
       getter user : User
       getter scopes : Scopes
 
-      def initialize(@user : User, @scopes : Scopes)
+      def initialize(@user : User, @scopes : Scopes) : Nil
       end
     end
   end

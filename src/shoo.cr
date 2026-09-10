@@ -14,7 +14,7 @@ module Shoo
   class ExitProgram < Exception
     getter code : Int32
 
-    def initialize(@code : Int32 = 0)
+    def initialize(@code : Int32 = 0) : Nil
       super()
     end
   end

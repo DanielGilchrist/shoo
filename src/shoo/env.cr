@@ -8,7 +8,7 @@ module Shoo
       new(ENV.to_h)
     end
 
-    def initialize(@variables : Hash(String, String))
+    def initialize(@variables : Hash(String, String)) : Nil
     end
 
     def github_token(from : String? = nil) : Lookup?

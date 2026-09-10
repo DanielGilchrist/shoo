@@ -21,7 +21,7 @@ module Shoo
       new(span)
     end
 
-    private def initialize(@span : Time::Span)
+    private def initialize(@span : Time::Span) : Nil
     end
 
     getter span : Time::Span

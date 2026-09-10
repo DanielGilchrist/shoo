@@ -21,7 +21,7 @@ module Shoo
     @subjects_by_url : (SubjectsByUrl | GitHub::Error)? = nil
     @comments_by_url : (CommentsByUrl | GitHub::Error)? = nil
 
-    def initialize(@config : Config, @client : GitHub::Client, @github_notifications : Array(GitHub::Notification))
+    def initialize(@config : Config, @client : GitHub::Client, @github_notifications : Array(GitHub::Notification)) : Nil
       @team_cache = Cache(Array(GitHub::User) | GitHub::Error).new
     end
 
@@ -81,7 +81,7 @@ module Shoo
       PurgeReason::Filtered
     end
 
-    private def fetch_subject(github_notification : GitHub::Notification) : Subject | GitHub::Error | Nil
+    private def fetch_subject(github_notification : GitHub::Notification) : (Subject | GitHub::Error)?
       return unless github_notification.subject.should_check_author?
 
       url = github_notification.subject.url
@@ -193,7 +193,7 @@ module Shoo
       ALWAYS_KEEP_REASONS.includes?(github_notification.reason)
     end
 
-    private def contains_team_mention?(content : String, organisation_name : String, team_slug : String)
+    private def contains_team_mention?(content : String, organisation_name : String, team_slug : String) : Bool
       content.includes?("@#{organisation_name}/#{team_slug}")
     end
 

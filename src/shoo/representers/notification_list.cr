@@ -1,7 +1,7 @@
 module Shoo
   module Representers
     struct NotificationList
-      def initialize(@notifications : Array(GitHub::Notification))
+      def initialize(@notifications : Array(GitHub::Notification)) : Nil
       end
 
       def display(io : IO) : Nil

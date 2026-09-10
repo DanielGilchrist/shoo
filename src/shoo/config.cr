@@ -11,7 +11,7 @@ module Shoo
       new(notifications, github)
     end
 
-    private def initialize(@notifications : Notifications, @github : Github)
+    private def initialize(@notifications : Notifications, @github : Github) : Nil
     end
 
     getter notifications : Notifications

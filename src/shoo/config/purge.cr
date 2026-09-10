@@ -27,7 +27,7 @@ module Shoo
         errors
       end
 
-      private def initialize(@global : Rules, @repos : Hash(String, Rules))
+      private def initialize(@global : Rules, @repos : Hash(String, Rules)) : Nil
       end
 
       getter global : Rules

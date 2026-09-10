@@ -4,7 +4,7 @@ private alias Config = Shoo::Config
 private alias Error = Config::Error
 private alias StateRule = Config::Purge::Rules::PurgeIf::StateRule
 
-private def load_config(yaml : String)
+private def load_config(yaml : String) : Config | Array(Error)
   Config.load(Config::Store::InMemory.new(yaml))
 end
 

@@ -35,7 +35,7 @@ module Shoo
             @mentioned_teams : Array(TeamSlug),
             @authors : Array(String),
             @mentioned : Bool,
-          )
+          ) : Nil
           end
 
           getter author_in_teams : Array(TeamSlug)

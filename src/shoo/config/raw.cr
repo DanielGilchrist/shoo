@@ -12,7 +12,7 @@ module Shoo
       getter notifications : Notifications = Notifications.new
       getter github : Github = Github.new
 
-      private def initialize
+      private def initialize : Nil
       end
     end
   end

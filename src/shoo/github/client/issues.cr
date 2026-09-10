@@ -2,7 +2,7 @@ module Shoo
   module GitHub
     struct Client
       struct Issues
-        def initialize(@request : Request)
+        def initialize(@request : Request) : Nil
         end
 
         def get(url : String) : Result(Issue)

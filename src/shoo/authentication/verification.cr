@@ -1,7 +1,7 @@
 module Shoo
   module Authentication
     struct Verification
-      def initialize(@context : Context)
+      def initialize(@context : Context) : Nil
       end
 
       def verify(token : GitHub::Token) : GitHub::Identity

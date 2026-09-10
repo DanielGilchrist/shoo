@@ -6,7 +6,7 @@ module Shoo
 
     alias Key = String
 
-    def initialize
+    def initialize : Nil
       @cache = {} of Key => T
     end
 

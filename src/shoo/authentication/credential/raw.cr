@@ -9,7 +9,7 @@ module Shoo
 
         getter token : String?
 
-        def initialize(@provider : Provider?, @token : String? = nil)
+        def initialize(@provider : Provider?, @token : String? = nil) : Nil
         end
       end
     end

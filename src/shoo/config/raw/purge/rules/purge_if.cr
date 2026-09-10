@@ -9,7 +9,7 @@ module Shoo
             getter merged : StateRule = StateRule.new
             getter closed : StateRule = StateRule.new
 
-            def initialize
+            def initialize : Nil
             end
           end
         end

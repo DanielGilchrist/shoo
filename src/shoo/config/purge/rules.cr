@@ -20,7 +20,7 @@ module Shoo
           new(keep_if_result, purge_if_result, raw.unsubscribe?)
         end
 
-        private def initialize(@keep_if : KeepIf, @purge_if : PurgeIf, @unsubscribe : Bool)
+        private def initialize(@keep_if : KeepIf, @purge_if : PurgeIf, @unsubscribe : Bool) : Nil
         end
 
         getter keep_if : KeepIf

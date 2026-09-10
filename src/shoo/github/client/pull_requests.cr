@@ -2,7 +2,7 @@ module Shoo
   module GitHub
     struct Client
       struct PullRequests
-        def initialize(@request : Request)
+        def initialize(@request : Request) : Nil
         end
 
         def get(url : String) : Result(PullRequest)

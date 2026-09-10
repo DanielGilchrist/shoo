@@ -10,7 +10,7 @@ module Shoo
               getter? always : Bool = false
               getter after : String? = nil
 
-              def initialize
+              def initialize : Nil
               end
             end
           end

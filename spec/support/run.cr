@@ -5,7 +5,7 @@ struct RunResult
   getter credential_store : Shoo::Authentication::CredentialStore
   getter config_store : Shoo::Config::Store
 
-  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory, @credential_store : Shoo::Authentication::CredentialStore, @config_store : Shoo::Config::Store)
+  def initialize(@context : Shoo::Context?, @stdout : IO::Memory, @stderr : IO::Memory, @credential_store : Shoo::Authentication::CredentialStore, @config_store : Shoo::Config::Store) : Nil
   end
 
   def credential : Shoo::Authentication::Credential?

@@ -35,6 +35,10 @@ jobs:
           restore-keys: |
             crystal-${{ hashFiles('shard.lock', 'shard.yml') }}-
 
+      - name: Build ameba
+        working-directory: lib/ameba
+        run: shards build ameba
+
       - name: Check formatting
         run: crystal tool format --check src spec
 
