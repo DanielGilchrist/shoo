@@ -26,6 +26,10 @@ module Shoo
           Error.from_json(response.body) unless response.success?
         end
 
+        def count : Int32
+          @pool.requests
+        end
+
         def graphql : ::GraphQL::Client
           ::GraphQL::Client.new(GraphQLTransport.new(@pool, @headers))
         end

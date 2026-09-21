@@ -13,7 +13,7 @@ describe Shoo::Commands::Purge do
     result = run(["notification", "purge", "--force"])
 
     output = result.stdout.to_s
-    output.should contain("Successfully purged")
+    output.should contain("Purged")
     output.should contain("1")
   end
 
@@ -45,7 +45,7 @@ describe Shoo::Commands::Purge do
 
     result = run(["notification", "purge"], stdin: build_stdin("y"))
 
-    result.stdout.to_s.should contain("Successfully purged")
+    result.stdout.to_s.should contain("Purged")
   end
 
   it "cancels without touching the API when the user declines" do
@@ -107,7 +107,7 @@ describe Shoo::Commands::Purge do
     result = run(["notification", "purge", "--force"])
 
     output = result.stdout.to_s
-    output.should contain("Successfully purged")
+    output.should contain("Purged")
     output.should contain("Failed to purge")
     output.should contain("Merged two")
     output.should contain("Boom")

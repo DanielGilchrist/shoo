@@ -8,6 +8,8 @@ module Shoo
       class ConnectionPool
         DEFAULT_SIZE = 25
 
+        getter requests : Int32 = 0
+
         def initialize(@host : String, size : Int32 = DEFAULT_SIZE) : Nil
           @tls = OpenSSL::SSL::Context::Client.new
           @idle = Array(HTTP::Client).new(size)
@@ -17,6 +19,7 @@ module Shoo
 
         def checkout(& : HTTP::Client -> T) : T forall T
           @permits.receive
+          @requests += 1
           client = @idle.pop? || HTTP::Client.new(@host, tls: @tls)
 
           begin

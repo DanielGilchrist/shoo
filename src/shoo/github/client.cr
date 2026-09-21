@@ -5,6 +5,10 @@ module Shoo
         @request = Request.new(token)
       end
 
+      def request_count : Int32
+        @request.count
+      end
+
       def notifications : Notifications
         Notifications.new(@request)
       end

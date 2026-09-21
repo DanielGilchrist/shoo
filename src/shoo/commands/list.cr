@@ -24,9 +24,16 @@ module Shoo
         stdout = context.stdout
 
         filter = NotificationFilter.new(context.config, client)
+        status = context.status
+        status.update("Fetching notifications")
+        fetched_count = 0
 
         notifications =
-          case fetched = client.notifications.all { |page| filter.add(apply_filters(page)) if verdict? }
+          case fetched = client.notifications.all { |page|
+            fetched_count += page.size
+            status.update("Fetched #{fetched_count} notifications")
+            filter.add(apply_filters(page)) if verdict?
+          }
           in Array(GitHub::Notification) then fetched
           in GitHub::Error
             context.abort!("Error fetching notifications: #{fetched.message}")
@@ -35,11 +42,13 @@ module Shoo
         filtered = apply_filters(notifications)
 
         if filtered.empty?
+          status.clear
           message = notifications.empty? ? "No notifications." : "No notifications match the given filters."
           return stdout.puts message
         end
 
         if verdict?
+          status.update("Evaluating #{filtered.size} notifications")
           results =
             case evaluated = filter.filter
             in Array(::Shoo::Notification::Any) then evaluated
@@ -47,10 +56,16 @@ module Shoo
               context.abort!("Error evaluating notifications: #{GitHub.describe(evaluated)}")
             end
 
+          status.finish(summary(notifications.size, client.request_count))
           Representers::NotificationVerdict.new(results).display(stdout)
         else
+          status.finish(summary(notifications.size, client.request_count))
           Representers::NotificationList.new(filtered).display(stdout)
         end
+      end
+
+      private def summary(notification_count : Int32, request_count : Int32) : String
+        "#{notification_count} notifications, #{request_count} requests"
       end
 
       private def apply_filters(notifications : Array(GitHub::Notification)) : Array(GitHub::Notification)

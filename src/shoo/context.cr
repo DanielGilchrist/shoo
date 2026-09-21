@@ -24,6 +24,7 @@ module Shoo
 
     @token_source : Tuple(Authentication::TokenSource?)?
     @client : GitHub::Client?
+    @status : Status?
 
     def token_source : Authentication::TokenSource?
       (@token_source ||= {@config.github.token_source(@env) || credential_source})[0]
@@ -37,7 +38,12 @@ module Shoo
       Prompt.new(@stdin, @stdout)
     end
 
+    def status : Status
+      @status ||= Status.new(@stderr)
+    end
+
     def abort!(message : String) : NoReturn
+      status.clear
       @stderr.puts message
       raise ExitProgram.new(1)
     end
