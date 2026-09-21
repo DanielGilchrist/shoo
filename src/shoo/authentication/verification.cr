@@ -6,8 +6,8 @@ module Shoo
 
       def verify(token : GitHub::Token) : GitHub::Identity
         case identity = GitHub::Client.new(token).user.identity
-        in GitHub::Identity then identity
-        in GitHub::Error    then @context.abort!("Could not verify token: #{identity.message}")
+        in GitHub::Identity   then identity
+        in ::GraphQL::Failure then @context.abort!("Could not verify token: #{GitHub.describe(identity)}")
         end
       end
     end

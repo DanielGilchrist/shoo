@@ -8,7 +8,7 @@ module Shoo
       @[JSON::Field(converter: Shoo::GitHub::Converters::NotificationReason)]
       getter reason : NotificationReason
 
-      getter subject : Subject
+      getter subject : NotificationSubject
       getter repository : Repository
     end
   end

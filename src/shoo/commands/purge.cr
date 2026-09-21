@@ -19,13 +19,19 @@ module Shoo
 
         show_mode_banner(stdout)
 
-        github_notifications = client.notifications.all.unwrap_or do |error|
-          context.abort!("Error fetching notifications: #{error.message}")
-        end
+        github_notifications =
+          case fetched = client.notifications.all
+          in Array(GitHub::Notification) then fetched
+          in GitHub::Error
+            context.abort!("Error fetching notifications: #{fetched.message}")
+          end
 
-        results = NotificationFilter.new(context.config, client, github_notifications).filter.unwrap_or do |error|
-          context.abort!("Error evaluating notifications: #{error.message}")
-        end
+        results =
+          case evaluated = NotificationFilter.new(context.config, client, github_notifications).filter
+          in Array(::Shoo::Notification::Any) then evaluated
+          in GitHub::Failure
+            context.abort!("Error evaluating notifications: #{GitHub.describe(evaluated)}")
+          end
 
         keeping = Array(::Shoo::Notification::Kept).new
         removing = Array(::Shoo::Notification::Purged).new

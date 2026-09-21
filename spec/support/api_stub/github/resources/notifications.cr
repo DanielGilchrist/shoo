@@ -30,14 +30,14 @@ module APIStub
             path = subject.path(spec.repo, id)
             url = GitHub.url(path)
             type = subject.type
-            stub(:get, path, status: subject.status, body: subject.body)
+            @builder.register_subject(spec.repo, id.to_i, subject)
           end
 
           {
             id:         id,
             reason:     spec.reason,
             subject:    {title: spec.title, type: type, url: url},
-            repository: {full_name: spec.repo},
+            repository: {name: spec.repo.split('/').last, full_name: spec.repo, owner: {login: spec.repo.split('/').first}},
           }
         end
       end

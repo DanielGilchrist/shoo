@@ -3,10 +3,12 @@ module Shoo
     struct Repository
       include JSON::Serializable
 
+      getter name : String
       getter full_name : String
+      getter owner : RepositoryOwner
 
       def organisation_name : String
-        full_name.split("/").first
+        owner.login
       end
     end
   end

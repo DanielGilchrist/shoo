@@ -43,6 +43,21 @@ module Shoo
       end
     end
 
+    struct Unverified < KeepReason
+      getter message : String
+
+      def initialize(@message : String) : Nil
+      end
+
+      def label : String
+        "unverified"
+      end
+
+      def colourise(width : Int32) : String
+        label.ljust(width).colorize.yellow.to_s
+      end
+    end
+
     abstract struct TeamReason < KeepReason
       getter team : String
 

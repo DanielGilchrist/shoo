@@ -1,9 +1,9 @@
 module Shoo
   module GitHub
-    struct Comment
+    struct RepositoryOwner
       include JSON::Serializable
 
-      getter body : String
+      getter login : String
     end
   end
 end

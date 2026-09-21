@@ -5,23 +5,27 @@ module Shoo
         def initialize(@request : Request) : Nil
         end
 
-        def all(per_page : Int32 = 50) : Result(Array(Notification))
+        def all(per_page : Int32 = 50) : Array(Notification) | Error
           notifications = [] of Notification
           page = 1
 
           loop do
-            result = list(page, per_page).unwrap_or { |error| return Result(Array(Notification)).new(error) }
-            notifications.concat(result)
-            break if result.size < per_page
+            case result = list(page, per_page)
+            in Error
+              return result
+            in Array(Notification)
+              notifications.concat(result)
+              break if result.size < per_page
+            end
 
             page += 1
           end
 
-          Result(Array(Notification)).new(notifications)
+          notifications
         end
 
         # https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28&versionId=free-pro-team%40latest&productId=rest#list-notifications-for-the-authenticated-user
-        def list(page : Int32 = 1, per_page : Int32 = 50) : Result(Array(Notification))
+        def list(page : Int32 = 1, per_page : Int32 = 50) : Array(Notification) | Error
           @request.get(Array(Notification), "/notifications", query: {
             "page"     => page.to_s,
             "per_page" => per_page.to_s,

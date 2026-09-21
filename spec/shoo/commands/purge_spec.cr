@@ -124,12 +124,28 @@ describe Shoo::Commands::Purge do
     result.stderr.to_s.should contain("Server Error")
   end
 
-  it "aborts without purging when a subject fetch fails" do
+  it "does not purge a notification whose subject could not be verified" do
     APIStub::GitHub.stub do
       notifications.list(
         notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
-          subject: failing_pull_request(status: 500, message: "Subject boom")),
+          subject: failing_pull_request(message: "Subject boom")),
       )
+      # no mark_as_done stubbed: an unverified subject must never be purged
+    end
+
+    result = run(["notification", "purge", "--force"])
+
+    result.stdout.to_s.should contain("No notifications to purge")
+    result.stderr.to_s.should be_empty
+  end
+
+  it "aborts without purging when the subject query fails" do
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
+          subject: pull_request(merged: true)),
+      )
+      graphql.fail(status: 502, message: "Subject boom")
       # no mark_as_done stubbed: a failed evaluation must purge nothing
     end
 

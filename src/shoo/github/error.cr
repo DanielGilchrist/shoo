@@ -10,7 +10,6 @@ module Shoo
       end
 
       getter message : String
-      getter documentation_url : String
 
       @[JSON::Field(converter: Shoo::GitHub::Error::StringToUInt16Converter)]
       getter status : UInt16

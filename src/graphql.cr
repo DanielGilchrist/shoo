@@ -1,0 +1,26 @@
+require "http/client"
+require "json"
+require "uri"
+
+require "./graphql/error/location"
+require "./graphql/error"
+require "./graphql/envelope"
+require "./graphql/connection_failure"
+require "./graphql/http_failure"
+require "./graphql/rejected_query"
+require "./graphql/malformed_response"
+require "./graphql/failure"
+require "./graphql/transport"
+require "./graphql/transport/endpoint"
+require "./graphql/client/payload"
+require "./graphql/client"
+require "./graphql/query"
+require "./graphql/fragment"
+require "./graphql/definition"
+require "./graphql/document/enum_value"
+require "./graphql/document/builder"
+require "./graphql/document"
+
+module GraphQL
+  VERSION = "0.1.0"
+end

@@ -1,9 +1,12 @@
 module Shoo
-  struct NotificationFilter
-    alias Subject = GitHub::PullRequest | GitHub::Issue
-    alias SubjectsByUrl = Hash(String, Subject)
-    alias CommentsByUrl = Hash(String, Array(GitHub::Comment))
-    alias SubjectEndpoint = GitHub::Client::Issues | GitHub::Client::PullRequests
+  class NotificationFilter
+    alias Subject = GitHub::Subject::Any
+    alias SubjectOutcome = GitHub::Client::Subjects::Outcome
+    alias SubjectOutcomes = GitHub::Client::Subjects::Outcomes
+    alias CommentsOutcome = GitHub::Client::Subjects::CommentsOutcome
+    alias CommentsOutcomes = GitHub::Client::Subjects::CommentsOutcomes
+    alias Failure = GitHub::Failure
+    alias Verdict = KeepReason | PurgeReason
     alias KeepIfRules = Config::Purge::Rules::KeepIf
     alias PurgeIfRules = Config::Purge::Rules::PurgeIf
     alias StateRule = PurgeIfRules::StateRule
@@ -16,16 +19,18 @@ module Shoo
       GitHub::NotificationReason::Manual,
     }
 
-    record SubjectAndCommentsUrl, subject_url : String, comments_url : String
+    alias TeamOutcome = GitHub::Client::Teams::Members | GitHub::Unresolved | ::GraphQL::Failure
+    alias TeamKey = Tuple(String, String)
 
-    @subjects_by_url : (SubjectsByUrl | GitHub::Error)? = nil
-    @comments_by_url : (CommentsByUrl | GitHub::Error)? = nil
+    @subjects : (SubjectOutcomes | ::GraphQL::Failure)? = nil
+    @comments : (CommentsOutcomes | ::GraphQL::Failure)? = nil
 
     def initialize(@config : Config, @client : GitHub::Client, @github_notifications : Array(GitHub::Notification)) : Nil
-      @team_cache = Cache(Array(GitHub::User) | GitHub::Error).new
+      @teams = Hash(TeamKey, TeamOutcome).new
     end
 
-    def filter : GitHub::Result(Array(Notification::Any))
+    def filter : Array(Notification::Any) | Failure
+      prefetch
       notifications = Array(Notification::Any).new(@github_notifications.size)
 
       @github_notifications.each do |github_notification|
@@ -34,19 +39,28 @@ module Shoo
           notifications << Notification::Kept.new(github_notification, verdict)
         in PurgeReason
           notifications << Notification::Purged.new(github_notification, verdict)
-        in GitHub::Error
-          return GitHub::Result(Array(Notification::Any)).new(verdict)
+        in Failure
+          return verdict
         end
       end
 
-      GitHub::Result(Array(Notification::Any)).new(notifications)
+      notifications
     end
 
-    private def verdict_for(github_notification : GitHub::Notification) : KeepReason | PurgeReason | GitHub::Error
+    private def verdict_for(github_notification : GitHub::Notification) : Verdict | Failure
       rules = @config.purge_rules_for(github_notification.repository.full_name)
 
-      subject = fetch_subject(github_notification)
-      return subject if subject.is_a?(GitHub::Error)
+      subject =
+        case outcome = subject_outcome_for(github_notification)
+        in Nil
+          nil
+        in ::GraphQL::Failure
+          return outcome
+        in GitHub::Unresolved
+          return unverified(github_notification, outcome.message)
+        in Subject
+          outcome
+        end
 
       if subject
         purge_if_rules = rules.purge_if
@@ -63,54 +77,76 @@ module Shoo
 
       return KeepReason::Mentioned.new if keep_rules.mentioned? && github_notification.reason.mention?
 
-      author = subject.user.login
-      return KeepReason::Author.new(author) if keep_rules.authors.includes?(author)
+      if author = subject.author_login
+        return KeepReason::Author.new(author) if keep_rules.authors.includes?(author)
 
-      author_team = matched_author_team(author, github_notification, keep_rules)
-      return author_team if author_team.is_a?(GitHub::Error)
-      return KeepReason::AuthorInTeam.new(author_team) if author_team
+        case author_team = matched_author_team(author, github_notification, keep_rules)
+        in Nil                then nil
+        in String             then return KeepReason::AuthorInTeam.new(author_team)
+        in GitHub::Unresolved then return unverified(github_notification, author_team.message)
+        in ::GraphQL::Failure then return author_team
+        end
+      end
 
-      if subject.is_a?(GitHub::PullRequest) && (requested_team = matched_requested_team(subject, keep_rules))
+      if subject.is_a?(GitHub::Subject::PullRequest) && (requested_team = matched_requested_team(subject, keep_rules))
         return KeepReason::RequestedTeam.new(requested_team)
       end
 
-      mentioned_team = matched_mentioned_team(subject, github_notification, keep_rules)
-      return mentioned_team if mentioned_team.is_a?(GitHub::Error)
-      return KeepReason::MentionedTeam.new(mentioned_team) if mentioned_team
-
-      PurgeReason::Filtered
+      case mentioned_team = matched_mentioned_team(github_notification, keep_rules)
+      in Nil                then PurgeReason::Filtered
+      in String             then KeepReason::MentionedTeam.new(mentioned_team)
+      in GitHub::Unresolved then unverified(github_notification, mentioned_team.message)
+      in ::GraphQL::Failure then mentioned_team
+      end
     end
 
-    private def fetch_subject(github_notification : GitHub::Notification) : (Subject | GitHub::Error)?
-      return unless github_notification.subject.should_check_author?
+    # Subjects and team rosters are independent, so their round trips overlap.
+    private def prefetch : Nil
+      subjects_done = Channel(Nil).new(1)
+      spawn do
+        subjects_by_ref
+      ensure
+        subjects_done.send(nil)
+      end
 
-      url = github_notification.subject.url
-      return unless url
+      rosters = ConcurrentWorker.run(team_keys) { |(organisation_name, slug)| {organisation_name, slug, @client.teams.members(organisation_name, slug)} }
+      rosters.each { |(organisation_name, slug, outcome)| @teams[{organisation_name, slug}] = outcome }
 
-      subjects = subjects_by_url
-      return subjects if subjects.is_a?(GitHub::Error)
+      subjects_done.receive
+    end
 
-      subjects[url]?
+    private def team_keys : Array(TeamKey)
+      @github_notifications.flat_map do |github_notification|
+        organisation_name = github_notification.repository.organisation_name
+        rules = @config.purge_rules_for(github_notification.repository.full_name)
+        rules.keep_if.author_in_teams.map { |team_slug| {organisation_name, team_slug.value} }
+      end.uniq!
+    end
+
+    private def unverified(github_notification : GitHub::Notification, message : String) : KeepReason
+      return KeepReason::AlwaysKept.new(github_notification.reason) if always_keep?(github_notification)
+
+      KeepReason::Unverified.new(message)
     end
 
     private def state_purge_reason(subject : Subject, purge_if : PurgeIfRules) : PurgeReason?
       case subject
-      in GitHub::PullRequest
+      in GitHub::Subject::PullRequest
         pull_request_purge_reason(subject, purge_if)
-      in GitHub::Issue
+      in GitHub::Subject::Issue
         issue_purge_reason(subject, purge_if)
       end
     end
 
-    private def pull_request_purge_reason(pull_request : GitHub::PullRequest, purge_if : PurgeIfRules) : PurgeReason?
+    private def pull_request_purge_reason(pull_request : GitHub::Subject::PullRequest, purge_if : PurgeIfRules) : PurgeReason?
       if pull_request.merged?
         PurgeReason::Merged if state_rule_matches?(purge_if.merged, pull_request.merged_at)
-      elsif pull_request.state.closed?
+      elsif pull_request.closed?
         PurgeReason::Closed if state_rule_matches?(purge_if.closed, pull_request.closed_at)
       end
     end
 
-    private def issue_purge_reason(issue : GitHub::Issue, purge_if : PurgeIfRules) : PurgeReason?
+    private def issue_purge_reason(issue : GitHub::Subject::Issue, purge_if : PurgeIfRules) : PurgeReason?
       return unless issue.closed?
 
       PurgeReason::Closed if state_rule_matches?(purge_if.closed, issue.closed_at)
@@ -127,66 +163,48 @@ module Shoo
       end
     end
 
-    private def endpoint_for(subject : GitHub::Subject) : SubjectEndpoint?
-      case subject.type
-      in .pull_request?
-        @client.pull_requests
-      in .issue?
-        @client.issues
-      in .check_suite?, .discussion?, .release?, .repository_dependabot_alerts_thread?
-        nil
-      end
-    end
-
-    private def matched_author_team(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String? | GitHub::Error
-      team_slugs = keep_rules.author_in_teams
-      return if team_slugs.empty?
-
+    private def matched_author_team(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure | Nil
       organisation_name = github_notification.repository.organisation_name
 
-      team_slugs.each do |team_slug|
-        slug_value = team_slug.value
+      keep_rules.author_in_teams.each do |team_slug|
+        slug = team_slug.value
 
-        members = @team_cache.fetch(organisation_name, slug_value) do
-          @client.teams.members(organisation_name, slug_value).unwrap_or { |error| error }
+        case members = @teams[{organisation_name, slug}]? || GitHub::Unresolved.new("team #{organisation_name}/#{slug} was not fetched")
+        in GitHub::Unresolved, ::GraphQL::Failure then return members
+        in GitHub::Client::Teams::Members         then return slug if members.includes?(author)
         end
-
-        return members if members.is_a?(GitHub::Error)
-        return slug_value if members.any? { |member| member.login == author }
       end
 
       nil
     end
 
-    private def matched_requested_team(pull_request : GitHub::PullRequest, keep_rules : KeepIfRules) : String?
-      matched = keep_rules.requested_teams.find do |team_slug|
-        pull_request.requested_teams.any? { |team| team_slug == team.slug }
+    private def matched_requested_team(pull_request : GitHub::Subject::PullRequest, keep_rules : KeepIfRules) : String?
+      requested_slugs = pull_request.requested_team_slugs
+      matched = keep_rules.requested_teams.find { |team_slug| requested_slugs.any? { |slug| team_slug == slug } }
+      matched.try(&.value)
+    end
+
+    private def matched_mentioned_team(github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure | Nil
+      return unless mentions_team?(github_notification, keep_rules)
+
+      bodies =
+        case outcome = comments_outcome_for(github_notification)
+        in Nil                                    then return
+        in GitHub::Unresolved, ::GraphQL::Failure then return outcome
+        in Array(String)                          then outcome
+        end
+
+      organisation_name = github_notification.repository.organisation_name
+
+      matched = keep_rules.mentioned_teams.find do |team_slug|
+        bodies.any? { |body| contains_team_mention?(body, organisation_name, team_slug.value) }
       end
 
       matched.try(&.value)
     end
 
-    private def matched_mentioned_team(subject : Subject, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String? | GitHub::Error
-      return unless github_notification.reason.team_mention?
-
-      mentioned_team_slugs = keep_rules.mentioned_teams
-      return if mentioned_team_slugs.empty?
-
-      organisation_name = github_notification.repository.organisation_name
-
-      comments = comments_by_url
-      return comments if comments.is_a?(GitHub::Error)
-
-      subject_comments = comments[github_notification.subject.url]?
-      return if subject_comments.nil? || subject_comments.empty?
-
-      matched = mentioned_team_slugs.find do |team_slug|
-        subject_comments.any? do |comment|
-          contains_team_mention?(comment.body, organisation_name, team_slug.value)
-        end
-      end
-
-      matched.try(&.value)
+    private def mentions_team?(github_notification : GitHub::Notification, keep_rules : KeepIfRules) : Bool
+      github_notification.reason.team_mention? && !keep_rules.mentioned_teams.empty?
     end
 
     private def always_keep?(github_notification : GitHub::Notification) : Bool
@@ -197,35 +215,53 @@ module Shoo
       content.includes?("@#{organisation_name}/#{team_slug}")
     end
 
-    private def comments_by_url : CommentsByUrl | GitHub::Error
-      @comments_by_url ||= fetch_comments_by_url_concurrently
+    private def subject_outcome_for(github_notification : GitHub::Notification) : SubjectOutcome | ::GraphQL::Failure | Nil
+      case ref = ref_for(github_notification)
+      in Nil                then nil
+      in GitHub::Unresolved then ref
+      in GitHub::SubjectRef
+        subjects = subjects_by_ref
+        return subjects if subjects.is_a?(::GraphQL::Failure)
+
+        subjects[ref]?
+      end
     end
 
-    private def subjects_by_url : SubjectsByUrl | GitHub::Error
-      @subjects_by_url ||= fetch_subjects_by_url_concurrently
+    private def comments_outcome_for(github_notification : GitHub::Notification) : CommentsOutcome | ::GraphQL::Failure | Nil
+      case ref = ref_for(github_notification)
+      in Nil                then nil
+      in GitHub::Unresolved then ref
+      in GitHub::SubjectRef
+        comments = comments_by_ref
+        return comments if comments.is_a?(::GraphQL::Failure)
+
+        comments[ref]?
+      end
     end
 
-    private def fetch_comments_by_url_concurrently : CommentsByUrl | GitHub::Error
-      subjects = subjects_by_url
-      return subjects if subjects.is_a?(GitHub::Error)
+    private def ref_for(github_notification : GitHub::Notification) : GitHub::SubjectRef | GitHub::Unresolved | Nil
+      subject = github_notification.subject
+      return unless subject.should_check_author?
 
-      subject_and_comments_urls = subjects.flat_map do |url, subject|
-        [SubjectAndCommentsUrl.new(url, subject.comments_url)].tap do |result|
-          result << SubjectAndCommentsUrl.new(url, subject.review_comments_url) if subject.is_a?(GitHub::PullRequest)
-        end
-      end
+      url = subject.url
+      return unless url
 
-      results = ConcurrentWorker.run(subject_and_comments_urls) do |urls|
-        {urls.subject_url, @client.comments.list(urls.comments_url)}
-      end
+      GitHub::SubjectRef.for(github_notification) || GitHub::Unresolved.new("no subject number in #{url}")
+    end
 
-      CommentsByUrl.new.tap do |comments_by_url|
-        results.each do |subject_url, result|
-          comments = result.unwrap_or { |error| return error }
-          next if comments.empty?
+    private def subjects_by_ref : SubjectOutcomes | ::GraphQL::Failure
+      @subjects ||= @client.subjects.fetch(refs_where { |github_notification| needs_subject_fetch?(github_notification) })
+    end
 
-          comments_by_url[subject_url] = comments
-        end
+    private def comments_by_ref : CommentsOutcomes | ::GraphQL::Failure
+      @comments ||= @client.subjects.comments(refs_where { |github_notification| needs_comments_fetch?(github_notification) })
+    end
+
+    private def refs_where(& : GitHub::Notification -> Bool) : Array(GitHub::SubjectRef)
+      @github_notifications.compact_map do |github_notification|
+        next unless yield github_notification
+
+        ref_for(github_notification).as?(GitHub::SubjectRef)
       end
     end
 
@@ -236,25 +272,9 @@ module Shoo
       rules.purge_if.applicable?
     end
 
-    private def fetch_subjects_by_url_concurrently : SubjectsByUrl | GitHub::Error
-      notifications_to_fetch = @github_notifications.select(&->needs_subject_fetch?(GitHub::Notification))
-
-      results = ConcurrentWorker.run(notifications_to_fetch) do |github_notification|
-        subject = github_notification.subject
-        url = subject.url
-        next unless url
-
-        endpoint = endpoint_for(subject)
-        next unless endpoint
-
-        {url, endpoint.get(url)}
-      end.compact
-
-      SubjectsByUrl.new.tap do |subjects_by_url|
-        results.each do |url, result|
-          subjects_by_url[url] = result.unwrap_or { |error| return error }
-        end
-      end
+    private def needs_comments_fetch?(github_notification : GitHub::Notification) : Bool
+      rules = @config.purge_rules_for(github_notification.repository.full_name)
+      mentions_team?(github_notification, rules.keep_if)
     end
   end
 end

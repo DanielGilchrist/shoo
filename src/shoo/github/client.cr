@@ -5,28 +5,20 @@ module Shoo
         @request = Request.new(token)
       end
 
-      def comments : Comments
-        Comments.new(@request)
-      end
-
       def notifications : Notifications
         Notifications.new(@request)
       end
 
-      def pull_requests : PullRequests
-        PullRequests.new(@request)
-      end
-
-      def issues : Issues
-        Issues.new(@request)
+      def subjects : Subjects
+        Subjects.new(@request.graphql)
       end
 
       def teams : Teams
-        Teams.new(@request)
+        Teams.new(@request.graphql)
       end
 
       def user : Users
-        Users.new(@request)
+        Users.new(@request.graphql)
       end
     end
   end

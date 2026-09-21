@@ -1,11 +1,12 @@
 require "./github/data"
+require "./github/graphql_responder"
 require "./github/builder"
 require "./github/resource_base"
 require "./github/resource_macro"
 require "./github/resources/notifications"
-require "./github/resources/pull_requests"
-require "./github/resources/issues"
+require "./github/resources/graphql"
 require "./github/resources/user"
+require "./github/resources/teams"
 
 module APIStub
   module GitHub

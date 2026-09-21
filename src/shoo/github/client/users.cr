@@ -2,12 +2,16 @@ module Shoo
   module GitHub
     struct Client
       struct Users
-        def initialize(@request : Request) : Nil
+        SCOPES_HEADER = "X-OAuth-Scopes"
+
+        def initialize(@graphql : ::GraphQL::Client) : Nil
         end
 
-        # https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
-        def identity : Identity | Error
-          @request.identity
+        def identity : Identity | ::GraphQL::Failure
+          case envelope = @graphql.execute(Queries::ViewerQuery)
+          in ::GraphQL::Envelope(Queries::ViewerQuery) then Identity.new(envelope.data.viewer.login, Scopes.parse(envelope.headers[SCOPES_HEADER]?))
+          in ::GraphQL::Failure                        then envelope
+          end
         end
       end
     end

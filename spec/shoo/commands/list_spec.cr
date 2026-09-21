@@ -173,6 +173,122 @@ describe Shoo::Commands::List do
     output.should contain("My own PR")
   end
 
+  it "keeps a pull request whose author is in a configured team and names the team" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              author_in_teams: ["core-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      teams.members("org", "core-team", "alice", "bob")
+      notifications.list(
+        notification(reason: "review_requested", title: "From a teammate", repo: "org/repo",
+          subject: pull_request(author: "bob", merged: false, state: "open")),
+        notification(reason: "review_requested", title: "From a stranger", repo: "org/repo",
+          subject: pull_request(author: "mallory", merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("author in core-team")
+    output.should contain("From a teammate")
+    output.should contain("REMOVING (1)")
+    output.should contain("From a stranger")
+  end
+
+  it "keeps notifications unverified when a configured team does not exist" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              author_in_teams: ["ghost-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unknown team", repo: "org/repo",
+          subject: pull_request(author: "bob", merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("unverified")
+  end
+
+  it "keeps a pull request whose author is in a configured team and names the team" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              author_in_teams: ["core-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      teams.members("org", "core-team", "alice", "bob")
+      notifications.list(
+        notification(reason: "review_requested", title: "From a teammate", repo: "org/repo",
+          subject: pull_request(author: "bob", merged: false, state: "open")),
+        notification(reason: "review_requested", title: "From a stranger", repo: "org/repo",
+          subject: pull_request(author: "mallory", merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("author in core-team")
+    output.should contain("From a teammate")
+    output.should contain("REMOVING (1)")
+    output.should contain("From a stranger")
+  end
+
+  it "keeps notifications unverified when a configured team does not exist" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              author_in_teams: ["ghost-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unknown team", repo: "org/repo",
+          subject: pull_request(author: "bob", merged: false, state: "open")),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("unverified")
+  end
+
   it "keeps a pull request whose requested team is configured and names the team" do
     config = Shoo::Config::Store::InMemory.new(<<-YAML)
       github:
@@ -198,6 +314,37 @@ describe Shoo::Commands::List do
     output.should contain("KEEPING (1)")
     output.should contain("review requested: core-team")
     output.should contain("Team review")
+  end
+
+  it "keeps a team mention when a configured team is mentioned in the comments" do
+    config = Shoo::Config::Store::InMemory.new(<<-YAML)
+      github:
+        token: "ghp_faketoken"
+
+      notifications:
+        purge:
+          global:
+            keep_if:
+              mentioned_teams: ["core-team"]
+      YAML
+
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "team_mention", title: "Needs core", repo: "org/repo",
+          subject: pull_request(merged: false, state: "open", comments: ["ping @org/core-team please"])),
+        notification(reason: "team_mention", title: "Other team", repo: "org/repo",
+          subject: pull_request(merged: false, state: "open", comments: ["ping @org/other-team"])),
+      )
+    end
+
+    result = run(["notification", "list", "--verdict"], config_store: config)
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("core-team mentioned")
+    output.should contain("Needs core")
+    output.should contain("REMOVING (1)")
+    output.should contain("Other team")
   end
 
   it "shows the keep reason for an always-kept notification" do
@@ -245,12 +392,30 @@ describe Shoo::Commands::List do
     result.stderr.to_s.should contain("Server Error")
   end
 
-  it "reports an error and reaches no verdict when a subject fetch fails" do
+  it "keeps a notification whose subject GitHub could not resolve and marks it unverified" do
     APIStub::GitHub.stub do
       notifications.list(
         notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
-          subject: failing_pull_request(status: 500, message: "Subject boom")),
+          subject: failing_pull_request(message: "Subject boom")),
       )
+    end
+
+    result = run(["notification", "list", "--verdict"])
+
+    output = result.stdout.to_s
+    output.should contain("KEEPING (1)")
+    output.should contain("unverified")
+    output.should contain("Unrelated PR")
+    result.stderr.to_s.should be_empty
+  end
+
+  it "reports an error and reaches no verdict when the subject query fails" do
+    APIStub::GitHub.stub do
+      notifications.list(
+        notification(reason: "review_requested", title: "Unrelated PR", repo: "org/repo",
+          subject: pull_request(merged: true)),
+      )
+      graphql.fail(status: 502, message: "Subject boom")
     end
 
     result = run(["notification", "list", "--verdict"])

@@ -7,41 +7,25 @@ module Shoo
 
         alias TBody = Hash(String, String)
 
-        HTTPS       = "https"
         GITHUB_HOST = "api.github.com"
-        BASE_URL    = "#{HTTPS}://#{GITHUB_HOST}"
 
         def initialize(token : Token) : Nil
           @headers = build_headers(token)
           @pool = ConnectionPool.new(GITHUB_HOST)
         end
 
-        def get(type : T.class, path : String, query : TBody = TBody.new) : Result(T) forall T
+        def get(type : T.class, path : String, query : TBody = TBody.new) : T | Error forall T
           response = @pool.checkout { |client| client.get(full_path(path, query), headers: @headers) }
-          Result(T).from(response)
-        end
-
-        def get_from_url(type : T.class, url : String) : Result(T) forall T
-          path = url.sub(BASE_URL, "")
-          get(type, path)
-        end
-
-        def identity(path : String = "/user") : Identity | Error
-          response = @pool.checkout(&.get(path, headers: @headers))
-
-          if response.success?
-            Identity.new(
-              User.from_json(response.body),
-              Scopes.parse(response.headers["X-OAuth-Scopes"]?),
-            )
-          else
-            Error.from_json(response.body)
-          end
+          response.success? ? T.from_json(response.body) : Error.from_json(response.body)
         end
 
         def delete(path : String) : Error?
           response = @pool.checkout(&.delete(path, headers: @headers))
           Error.from_json(response.body) unless response.success?
+        end
+
+        def graphql : ::GraphQL::Client
+          ::GraphQL::Client.new(GraphQLTransport.new(@pool, @headers))
         end
 
         private def full_path(path : String, query : TBody) : String

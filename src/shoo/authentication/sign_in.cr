@@ -75,7 +75,7 @@ module Shoo
       private def store(credential : Credential, identity : GitHub::Identity) : Nil
         @context.credential_store.save(credential)
         stdout.puts
-        stdout.puts "  #{"✓".colorize.green} Connected as #{"@#{identity.user.login}".colorize.bold}"
+        stdout.puts "  #{"✓".colorize.green} Connected as #{"@#{identity.login}".colorize.bold}"
         stdout.puts "  Try:  #{"shoo notification list".colorize.bold}"
       end
 

@@ -4,6 +4,7 @@ require "json"
 require "kebab"
 require "yaml"
 
+require "./graphql"
 require "./shoo/**"
 
 module Shoo

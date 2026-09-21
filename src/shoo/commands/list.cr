@@ -23,9 +23,12 @@ module Shoo
         client = context.client
         stdout = context.stdout
 
-        notifications = client.notifications.all.unwrap_or do |error|
-          context.abort!("Error fetching notifications: #{error.message}")
-        end
+        notifications =
+          case fetched = client.notifications.all
+          in Array(GitHub::Notification) then fetched
+          in GitHub::Error
+            context.abort!("Error fetching notifications: #{fetched.message}")
+          end
 
         filtered = apply_filters(notifications)
 
@@ -35,9 +38,12 @@ module Shoo
         end
 
         if verdict?
-          results = NotificationFilter.new(context.config, client, filtered).filter.unwrap_or do |error|
-            context.abort!("Error evaluating notifications: #{error.message}")
-          end
+          results =
+            case evaluated = NotificationFilter.new(context.config, client, filtered).filter
+            in Array(::Shoo::Notification::Any) then evaluated
+            in GitHub::Failure
+              context.abort!("Error evaluating notifications: #{GitHub.describe(evaluated)}")
+            end
 
           Representers::NotificationVerdict.new(results).display(stdout)
         else
