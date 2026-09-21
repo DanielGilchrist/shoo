@@ -20,6 +20,18 @@ describe Shoo::Commands::List do
     output.should contain("Bump deps")
   end
 
+  it "lists every page when notifications span several pages" do
+    APIStub::GitHub.stub do
+      notifications.list((1..120).map { |number| notification(title: "Notification #{number}", repo: "org/repo") })
+    end
+
+    result = run(["notification", "list"])
+
+    output = result.stdout.to_s
+    output.should contain("120 notifications across 1 repository")
+    output.should contain("Notification 120")
+  end
+
   it "tells the user when there are no notifications" do
     APIStub::GitHub.stub do
       notifications.list

@@ -22,15 +22,31 @@ module Shoo
     alias TeamOutcome = GitHub::Client::Teams::Members | GitHub::Unresolved | ::GraphQL::Failure
     alias TeamKey = Tuple(String, String)
 
-    @subjects : (SubjectOutcomes | ::GraphQL::Failure)? = nil
+    alias PendingSubjects = Future(SubjectOutcomes | ::GraphQL::Failure)
+
     @comments : (CommentsOutcomes | ::GraphQL::Failure)? = nil
 
-    def initialize(@config : Config, @client : GitHub::Client, @github_notifications : Array(GitHub::Notification)) : Nil
+    def initialize(@config : Config, @client : GitHub::Client) : Nil
+      @github_notifications = Array(GitHub::Notification).new
+      @subjects = SubjectOutcomes.new
+      @pending = Array(PendingSubjects).new
       @teams = Hash(TeamKey, TeamOutcome).new
     end
 
+    def add(notifications : Array(GitHub::Notification)) : Nil
+      @github_notifications.concat(notifications)
+
+      refs = refs_where(notifications) { |github_notification| needs_subject_fetch?(github_notification) }
+      return if refs.empty?
+
+      with_reviewers = notifications.any? { |github_notification| needs_reviewers?(github_notification) }
+      @pending << PendingSubjects.new { @client.subjects.fetch(refs, with_reviewers: with_reviewers) }
+    end
+
     def filter : Array(Notification::Any) | Failure
-      prefetch
+      failure = prefetch
+      return failure if failure
+
       notifications = Array(Notification::Any).new(@github_notifications.size)
 
       @github_notifications.each do |github_notification|
@@ -100,19 +116,23 @@ module Shoo
       end
     end
 
-    # Subjects and team rosters are independent, so their round trips overlap.
-    private def prefetch : Nil
-      subjects_done = Channel(Nil).new(1)
-      spawn do
-        subjects_by_ref
-      ensure
-        subjects_done.send(nil)
-      end
-
-      rosters = ConcurrentWorker.run(team_keys) { |(organisation_name, slug)| {organisation_name, slug, @client.teams.members(organisation_name, slug)} }
+    # Team rosters are fetched while the subject batches started by `add` are
+    # still in flight, then everything is joined.
+    private def prefetch : ::GraphQL::Failure?
+      rosters = Future.all(team_keys) { |(organisation_name, slug)| {organisation_name, slug, @client.teams.members(organisation_name, slug)} }
       rosters.each { |(organisation_name, slug, outcome)| @teams[{organisation_name, slug}] = outcome }
 
-      subjects_done.receive
+      failure = nil.as(::GraphQL::Failure?)
+
+      @pending.each do |pending|
+        case fetched = pending.await
+        in ::GraphQL::Failure then failure ||= fetched
+        in SubjectOutcomes    then @subjects.merge!(fetched)
+        end
+      end
+      @pending.clear
+
+      failure
     end
 
     private def team_keys : Array(TeamKey)
@@ -215,15 +235,11 @@ module Shoo
       content.includes?("@#{organisation_name}/#{team_slug}")
     end
 
-    private def subject_outcome_for(github_notification : GitHub::Notification) : SubjectOutcome | ::GraphQL::Failure | Nil
+    private def subject_outcome_for(github_notification : GitHub::Notification) : SubjectOutcome | Nil
       case ref = ref_for(github_notification)
       in Nil                then nil
       in GitHub::Unresolved then ref
-      in GitHub::SubjectRef
-        subjects = subjects_by_ref
-        return subjects if subjects.is_a?(::GraphQL::Failure)
-
-        subjects[ref]?
+      in GitHub::SubjectRef then @subjects[ref]?
       end
     end
 
@@ -249,16 +265,12 @@ module Shoo
       GitHub::SubjectRef.for(github_notification) || GitHub::Unresolved.new("no subject number in #{url}")
     end
 
-    private def subjects_by_ref : SubjectOutcomes | ::GraphQL::Failure
-      @subjects ||= @client.subjects.fetch(refs_where { |github_notification| needs_subject_fetch?(github_notification) })
-    end
-
     private def comments_by_ref : CommentsOutcomes | ::GraphQL::Failure
-      @comments ||= @client.subjects.comments(refs_where { |github_notification| needs_comments_fetch?(github_notification) })
+      @comments ||= @client.subjects.comments(refs_where(@github_notifications) { |github_notification| needs_comments_fetch?(github_notification) })
     end
 
-    private def refs_where(& : GitHub::Notification -> Bool) : Array(GitHub::SubjectRef)
-      @github_notifications.compact_map do |github_notification|
+    private def refs_where(notifications : Array(GitHub::Notification), & : GitHub::Notification -> Bool) : Array(GitHub::SubjectRef)
+      notifications.compact_map do |github_notification|
         next unless yield github_notification
 
         ref_for(github_notification).as?(GitHub::SubjectRef)
@@ -270,6 +282,11 @@ module Shoo
 
       rules = @config.purge_rules_for(github_notification.repository.full_name)
       rules.purge_if.applicable?
+    end
+
+    private def needs_reviewers?(github_notification : GitHub::Notification) : Bool
+      rules = @config.purge_rules_for(github_notification.repository.full_name)
+      !rules.keep_if.requested_teams.empty?
     end
 
     private def needs_comments_fetch?(github_notification : GitHub::Notification) : Bool

@@ -14,9 +14,11 @@ module Shoo
           @pool = ConnectionPool.new(GITHUB_HOST)
         end
 
-        def get(type : T.class, path : String, query : TBody = TBody.new) : T | Error forall T
+        def get(type : T.class, path : String, query : TBody = TBody.new) : Fetched(T) | Error forall T
           response = @pool.checkout { |client| client.get(full_path(path, query), headers: @headers) }
-          response.success? ? T.from_json(response.body) : Error.from_json(response.body)
+          return Error.from_json(response.body) unless response.success?
+
+          Fetched(T).new(T.from_json(response.body), response.headers)
         end
 
         def delete(path : String) : Error?

@@ -11,7 +11,7 @@ module Shoo
 
           def fetch(refs : Array(SubjectRef)) : Hash(SubjectRef, T | Unresolved) | ::GraphQL::Failure
             chunks = refs.uniq.each_slice(CHUNK_SIZE).to_a
-            results = ConcurrentWorker.run(chunks) { |chunk| execute_chunk(chunk) }
+            results = Future.all(chunks) { |chunk| execute_chunk(chunk) }
 
             results.each_with_object(Hash(SubjectRef, T | Unresolved).new) do |result, outcomes|
               case result

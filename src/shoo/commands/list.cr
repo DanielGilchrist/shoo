@@ -23,8 +23,10 @@ module Shoo
         client = context.client
         stdout = context.stdout
 
+        filter = NotificationFilter.new(context.config, client)
+
         notifications =
-          case fetched = client.notifications.all
+          case fetched = client.notifications.all { |page| filter.add(apply_filters(page)) if verdict? }
           in Array(GitHub::Notification) then fetched
           in GitHub::Error
             context.abort!("Error fetching notifications: #{fetched.message}")
@@ -39,7 +41,7 @@ module Shoo
 
         if verdict?
           results =
-            case evaluated = NotificationFilter.new(context.config, client, filtered).filter
+            case evaluated = filter.filter
             in Array(::Shoo::Notification::Any) then evaluated
             in GitHub::Failure
               context.abort!("Error evaluating notifications: #{GitHub.describe(evaluated)}")

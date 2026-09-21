@@ -19,15 +19,17 @@ module Shoo
 
         show_mode_banner(stdout)
 
+        filter = NotificationFilter.new(context.config, client)
+
         github_notifications =
-          case fetched = client.notifications.all
+          case fetched = client.notifications.all { |page| filter.add(page) }
           in Array(GitHub::Notification) then fetched
           in GitHub::Error
             context.abort!("Error fetching notifications: #{fetched.message}")
           end
 
         results =
-          case evaluated = NotificationFilter.new(context.config, client, github_notifications).filter
+          case evaluated = filter.filter
           in Array(::Shoo::Notification::Any) then evaluated
           in GitHub::Failure
             context.abort!("Error evaluating notifications: #{GitHub.describe(evaluated)}")
@@ -116,7 +118,7 @@ module Shoo
         io.puts "🧹 #{"Purging".colorize.red.bold} #{removing.size} notifications..."
 
         notifications_client = context.client.notifications
-        failures = ConcurrentWorker.run(removing) do |notification|
+        failures = Future.all(removing) do |notification|
           error = purge_notification(notifications_client, config, notification)
           {notification, error} if error
         end.compact

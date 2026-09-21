@@ -9,15 +9,6 @@ module Shoo
           mergedAt Time?
           closedAt Time?
           author? { login String }
-          reviewRequests(first: 20) do
-            nodes Array do
-              requestedReviewer? do
-                on Team do
-                  slug String
-                end
-              end
-            end
-          end
         end
 
         on Issue do

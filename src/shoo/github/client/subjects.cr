@@ -1,3 +1,7 @@
+require "../queries/issue_or_pull_request_fragment"
+require "../queries/issue_or_pull_request_with_reviewers_fragment"
+require "../queries/issue_or_pull_request_comments_fragment"
+
 module Shoo
   module GitHub
     struct Client
@@ -5,8 +9,9 @@ module Shoo
         CLOSED = "CLOSED"
 
         alias Fragment = Queries::IssueOrPullRequestFragment
+        alias WithReviewersFragment = Queries::IssueOrPullRequestWithReviewersFragment
         alias CommentsFragment = Queries::IssueOrPullRequestCommentsFragment
-        alias Reviewer = Fragment::PullRequest::ReviewRequests::Nodes::RequestedReviewer
+        alias Reviewer = WithReviewersFragment::PullRequest::ReviewRequests::Nodes::RequestedReviewer
 
         alias Outcome = Subject::Any | Unresolved
         alias Outcomes = Hash(SubjectRef, Outcome)
@@ -16,8 +21,17 @@ module Shoo
         def initialize(@graphql : ::GraphQL::Client) : Nil
         end
 
-        def fetch(refs : Array(SubjectRef)) : Outcomes | ::GraphQL::Failure
+        def fetch(refs : Array(SubjectRef), *, with_reviewers : Bool) : Outcomes | ::GraphQL::Failure
+          return fetch_with_reviewers(refs) if with_reviewers
+
           case fetched = Batch(Fragment).new(@graphql).fetch(refs)
+          in ::GraphQL::Failure then fetched
+          in Hash               then fetched.transform_values { |outcome| outcome.is_a?(Unresolved) ? outcome : subject(outcome) }
+          end
+        end
+
+        private def fetch_with_reviewers(refs : Array(SubjectRef)) : Outcomes | ::GraphQL::Failure
+          case fetched = Batch(WithReviewersFragment).new(@graphql).fetch(refs)
           in ::GraphQL::Failure then fetched
           in Hash               then fetched.transform_values { |outcome| outcome.is_a?(Unresolved) ? outcome : subject(outcome) }
           end
@@ -33,14 +47,7 @@ module Shoo
         private def subject(fragment : Fragment) : Outcome
           case node = fragment.variant
           in Fragment::PullRequest
-            Subject::PullRequest.new(
-              node.author.try(&.login),
-              node.merged,
-              node.merged_at,
-              node.state == CLOSED,
-              node.closed_at,
-              requested_team_slugs(node),
-            )
+            Subject::PullRequest.new(node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, [] of String)
           in Fragment::Issue
             Subject::Issue.new(node.author.try(&.login), node.state == CLOSED, node.closed_at)
           in Fragment::Unknown
@@ -48,7 +55,18 @@ module Shoo
           end
         end
 
-        private def requested_team_slugs(node : Fragment::PullRequest) : Array(String)
+        private def subject(fragment : WithReviewersFragment) : Outcome
+          case node = fragment.variant
+          in WithReviewersFragment::PullRequest
+            Subject::PullRequest.new(node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, requested_team_slugs(node))
+          in WithReviewersFragment::Issue
+            Subject::Issue.new(node.author.try(&.login), node.state == CLOSED, node.closed_at)
+          in WithReviewersFragment::Unknown
+            Unresolved.new("unexpected subject type #{node.typename}")
+          end
+        end
+
+        private def requested_team_slugs(node : WithReviewersFragment::PullRequest) : Array(String)
           node.review_requests.nodes.compact_map do |request|
             case reviewer = request.requested_reviewer.try(&.variant)
             in Reviewer::Team    then reviewer.slug
