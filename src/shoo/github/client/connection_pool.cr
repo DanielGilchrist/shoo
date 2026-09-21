@@ -1,27 +1,29 @@
 module Shoo
   module GitHub
     struct Client
-      # Reuses a fixed set of keep-alive HTTP clients so we pay the TLS handshake
-      # once per connection rather than once per request. The pool size is the cap
-      # on concurrent GitHub requests, since a checkout blocks once every client is out.
-      struct ConnectionPool
+      # Reuses a bounded set of keep-alive HTTP clients so we pay the TLS handshake
+      # once per connection rather than once per request. Idle clients are kept as
+      # a stack, so a request that follows another reuses the warm connection
+      # instead of opening a cold one. The size caps concurrent GitHub requests.
+      class ConnectionPool
         DEFAULT_SIZE = 25
 
-        def initialize(host : String, size : Int32 = DEFAULT_SIZE) : Nil
-          # Clients connect lazily, so idle pool entries cost nothing; share one TLS
-          # context across them rather than allocating one per client.
-          tls = OpenSSL::SSL::Context::Client.new
-          @clients = Channel(HTTP::Client).new(size)
-          size.times { @clients.send(HTTP::Client.new(host, tls: tls)) }
+        def initialize(@host : String, size : Int32 = DEFAULT_SIZE) : Nil
+          @tls = OpenSSL::SSL::Context::Client.new
+          @idle = Array(HTTP::Client).new(size)
+          @permits = Channel(Nil).new(size)
+          size.times { @permits.send(nil) }
         end
 
         def checkout(& : HTTP::Client -> T) : T forall T
-          client = @clients.receive
+          @permits.receive
+          client = @idle.pop? || HTTP::Client.new(@host, tls: @tls)
 
           begin
             yield client
           ensure
-            @clients.send(client)
+            @idle.push(client)
+            @permits.send(nil)
           end
         end
       end
