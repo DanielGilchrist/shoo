@@ -15,12 +15,12 @@ describe GraphQL::Document do
     text.should eq(%(query { r0: repository(owner: "org", name: "repo") { s0: issue(number: 7) { id } } }))
   end
 
-  it "encodes strings, numbers, booleans, null, enums and lists as GraphQL literals" do
+  it "encodes strings, numbers, booleans, null and enums as GraphQL literals" do
     text = GraphQL::Document.query do
-      field("search", query: %(say "hi"), first: 5, ratio: 0.5, open: true, after: nil,
-        type: GraphQL::Document::EnumValue.new("ISSUE"), labels: ["a", "b"] of GraphQL::Document::Scalar)
+      field("search", DocumentSpecNode, query: %(say "hi"), first: 5, ratio: 0.5, open: true, after: nil,
+        type: GraphQL::Document::EnumValue.new("ISSUE"))
     end
 
-    text.should eq(%(query { search(query: "say \\"hi\\"", first: 5, ratio: 0.5, open: true, after: null, type: ISSUE, labels: ["a", "b"]) }))
+    text.should eq(%(query { search(query: "say \\"hi\\"", first: 5, ratio: 0.5, open: true, after: null, type: ISSUE) { id } }))
   end
 end

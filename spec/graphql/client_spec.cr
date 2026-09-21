@@ -38,7 +38,7 @@ describe GraphQL::Client do
   it "returns RejectedQuery when there is no data, only errors" do
     outcome = execute(MemoryTransport.returning(200, %({"data": null, "errors": [{"message": "bad query"}]})))
 
-    outcome.should eq(GraphQL::RejectedQuery.new([GraphQL::Error.new("bad query")]))
+    outcome.should eq(GraphQL::RejectedQuery.new([GraphQL::Error.from_json(%({"message": "bad query"}))]))
   end
 
   it "returns HTTPFailure with the retry hint on a non-success status" do

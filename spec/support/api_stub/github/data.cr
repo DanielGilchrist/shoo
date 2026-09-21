@@ -51,23 +51,6 @@ module APIStub
         SubjectSpec.new("PullRequest", "pulls", node, comments_node)
       end
 
-      def issue(state : String = "closed", title : String = "An issue", author : String = "octocat",
-                closed_at : String? = "2020-01-01T00:00:00Z", comments : Array(String) = [] of String) : SubjectSpec
-        node = {
-          __typename: "Issue",
-          state:      state.upcase,
-          closedAt:   closed_at,
-          author:     {login: author},
-        }.to_json
-
-        comments_node = {
-          __typename: "Issue",
-          comments:   {nodes: comments.map { |body| {body: body} }},
-        }.to_json
-
-        SubjectSpec.new("Issue", "issues", node, comments_node)
-      end
-
       def failing_pull_request(message : String = "Could not resolve to an issue or pull request") : SubjectSpec
         SubjectSpec.new("PullRequest", "pulls", "null", "null", message)
       end

@@ -28,12 +28,14 @@ module Shoo
         status.update("Fetching notifications")
         fetched_count = 0
 
+        fetched = client.notifications.all do |page|
+          fetched_count += page.size
+          status.update("Fetched #{fetched_count} notifications")
+          filter.add(apply_filters(page)) if verdict?
+        end
+
         notifications =
-          case fetched = client.notifications.all { |page|
-            fetched_count += page.size
-            status.update("Fetched #{fetched_count} notifications")
-            filter.add(apply_filters(page)) if verdict?
-          }
+          case fetched
           in Array(GitHub::Notification) then fetched
           in GitHub::Error
             context.abort!("Error fetching notifications: #{fetched.message}")

@@ -10,9 +10,9 @@ module GraphQL
   #
   #   client.execute(ViewerQuery)  # => Envelope(ViewerQuery) | Failure
   macro query(name, &block)
-    ::GraphQL::Definition.object({{name}}) {{block}}
+    ::GraphQL::Definition.object({{ name }}) {{ block }}
 
-    struct {{name}}
+    struct {{ name }}
       include ::GraphQL::Query
 
       DOCUMENT = "query { " + SELECTION + " }"
@@ -31,9 +31,9 @@ module GraphQL
   # fragment: the struct exposes a `variant` union of one struct per `on` plus
   # `Unknown` for typenames the fragment did not name.
   macro fragment(name, &block)
-    ::GraphQL::Definition.object({{name}}) {{block}}
+    ::GraphQL::Definition.object({{ name }}) {{ block }}
 
-    struct {{name}}
+    struct {{ name }}
       include ::GraphQL::Fragment
     end
   end
@@ -44,12 +44,12 @@ module GraphQL
     macro object(name, &block)
       {% nodes = block.body.is_a?(Expressions) ? block.body.expressions : [block.body] %}
       {% discriminated = nodes.any? { |node| node.is_a?(Call) && node.name == "on" } %}
-      struct {{name}}
+      struct {{ name }}
         {% if discriminated %}
-          ::GraphQL::Definition.variants {{block}}
+          ::GraphQL::Definition.variants {{ block }}
         {% else %}
           include ::JSON::Serializable
-          ::GraphQL::Definition.fields {{block}}
+          ::GraphQL::Definition.fields {{ block }}
         {% end %}
       end
     end
@@ -60,7 +60,7 @@ module GraphQL
       {% for node in (block.body.is_a?(Expressions) ? block.body.expressions : [block.body]) %}
         {% if node.is_a?(Call) && node.name == "on" && node.args.size == 1 && node.block %}
           {% names << node.args[0] %}
-          ::GraphQL::Definition.object({{node.args[0]}}) {{node.block}}
+          ::GraphQL::Definition.object({{ node.args[0] }}) {{ node.block }}
         {% else %}
           {% node.raise "GraphQL::Definition: a discriminated selection may only contain `on Type do ... end` entries, got `#{node}`" %}
         {% end %}
@@ -101,14 +101,14 @@ module GraphQL
         new(
           case typename
           {% for name in names %}
-          when {{name.stringify}} then {{name}}.from_json(json)
+          when {{ name.stringify }} then {{ name }}.from_json(json)
           {% end %}
           else Unknown.new(typename)
           end
         )
       end
 
-      SELECTION = "__typename"{% for name in names %} + " ... on {{name}} { " + {{name}}::SELECTION + " }"{% end %}
+      SELECTION = "__typename"{% for name in names %} + " ... on {{ name }} { " + {{ name }}::SELECTION + " }"{% end %}
     end
 
     # :nodoc:
@@ -126,16 +126,16 @@ module GraphQL
           {% type = field.camelcase.id %}
           {% parts << "\"#{field}#{arguments.id} { \" + #{type}::SELECTION + \" }\"" %}
 
-          ::GraphQL::Definition.object({{type}}) {{node.block}}
+          ::GraphQL::Definition.object({{ type }}) {{ node.block }}
 
-          @[::JSON::Field(key: {{field.stringify}})]
-          getter {{field.underscore.id}} : {{ list ? "Array(#{type})".id : type }}{{ nullable ? "?".id : "".id }}
+          @[::JSON::Field(key: {{ field.stringify }})]
+          getter {{ field.underscore.id }} : {{ list ? "Array(#{type})".id : type }}{{ nullable ? "?".id : "".id }}
         {% else %}
           {% node.raise "GraphQL::Definition: a scalar field needs exactly one type, e.g. `#{node.name} String`" unless node.args.size == 1 %}
           {% parts << "\"#{node.name}#{arguments.id}\"" %}
 
-          @[::JSON::Field(key: {{node.name.stringify}})]
-          getter {{node.name.underscore.id}} : {{node.args[0]}}
+          @[::JSON::Field(key: {{ node.name.stringify }})]
+          getter {{ node.name.underscore.id }} : {{ node.args[0] }}
         {% end %}
       {% end %}
 

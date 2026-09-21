@@ -1,5 +1,5 @@
 module GraphQL
-  struct Document
+  module Document
     record EnumValue, name : String
   end
 end

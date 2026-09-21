@@ -7,9 +7,9 @@ module GraphQL
   #       field("issueOrPullRequest", IssueOrPullRequestFragment, as: "s0", number: 1)
   #     end
   #   end
-  struct Document
-    alias Scalar = String | Int::Primitive | Float::Primitive | Bool | Nil | EnumValue
-    alias Argument = Scalar | Array(Scalar)
+  module Document
+    alias Scalar = String | Int::Primitive | Float::Primitive | Bool | EnumValue?
+    alias Argument = Scalar
 
     def self.query(& : ->) : String
       String.build do |io|
@@ -17,15 +17,6 @@ module GraphQL
         with Builder.new(io) yield
         io << " }"
       end
-    end
-
-    def self.encode(io : IO, value : Array(Scalar)) : Nil
-      io << '['
-      value.each_with_index do |element, index|
-        io << ", " unless index.zero?
-        encode(io, element)
-      end
-      io << ']'
     end
 
     def self.encode(io : IO, value : Scalar) : Nil

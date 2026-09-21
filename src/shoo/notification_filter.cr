@@ -183,7 +183,7 @@ module Shoo
       end
     end
 
-    private def matched_author_team(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure | Nil
+    private def matched_author_team(author : String, github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure?
       organisation_name = github_notification.repository.organisation_name
 
       keep_rules.author_in_teams.each do |team_slug|
@@ -204,7 +204,7 @@ module Shoo
       matched.try(&.value)
     end
 
-    private def matched_mentioned_team(github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure | Nil
+    private def matched_mentioned_team(github_notification : GitHub::Notification, keep_rules : KeepIfRules) : String | GitHub::Unresolved | ::GraphQL::Failure?
       return unless mentions_team?(github_notification, keep_rules)
 
       bodies =
@@ -235,7 +235,7 @@ module Shoo
       content.includes?("@#{organisation_name}/#{team_slug}")
     end
 
-    private def subject_outcome_for(github_notification : GitHub::Notification) : SubjectOutcome | Nil
+    private def subject_outcome_for(github_notification : GitHub::Notification) : SubjectOutcome?
       case ref = ref_for(github_notification)
       in Nil                then nil
       in GitHub::Unresolved then ref
@@ -243,7 +243,7 @@ module Shoo
       end
     end
 
-    private def comments_outcome_for(github_notification : GitHub::Notification) : CommentsOutcome | ::GraphQL::Failure | Nil
+    private def comments_outcome_for(github_notification : GitHub::Notification) : CommentsOutcome | ::GraphQL::Failure?
       case ref = ref_for(github_notification)
       in Nil                then nil
       in GitHub::Unresolved then ref
@@ -255,7 +255,7 @@ module Shoo
       end
     end
 
-    private def ref_for(github_notification : GitHub::Notification) : GitHub::SubjectRef | GitHub::Unresolved | Nil
+    private def ref_for(github_notification : GitHub::Notification) : GitHub::SubjectRef | GitHub::Unresolved?
       subject = github_notification.subject
       return unless subject.should_check_author?
 

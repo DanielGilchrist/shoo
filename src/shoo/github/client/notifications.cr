@@ -7,10 +7,6 @@ module Shoo
 
         PATH = "/notifications"
 
-        def all(per_page : Int32 = 50) : Array(Notification) | Error
-          all(per_page) { }
-        end
-
         def all(per_page : Int32 = 50, & : Array(Notification) ->) : Array(Notification) | Error
           first =
             case page = list(1, per_page)

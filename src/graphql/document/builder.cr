@@ -1,5 +1,5 @@
 module GraphQL
-  struct Document
+  module Document
     struct Builder
       def initialize(@io : IO) : Nil
       end
@@ -9,10 +9,6 @@ module GraphQL
         @io << " {"
         with self yield
         @io << " }"
-      end
-
-      def field(field_name : String, *, as alias_name : String? = nil, **arguments : Argument) : Nil
-        open(field_name, alias_name, arguments)
       end
 
       def field(field_name : String, fragment : T.class, *, as alias_name : String? = nil, **arguments : Argument) : Nil forall T

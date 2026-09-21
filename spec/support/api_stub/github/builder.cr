@@ -23,10 +23,6 @@ module APIStub
         Data.failing_pull_request(**args)
       end
 
-      def issue(**args) : Data::SubjectSpec
-        Data.issue(**args)
-      end
-
       def register(method : Symbol, path : String, query : Hash(String, String)? = nil, status : Int32 = 200, body : String = "", headers : Hash(String, String)? = nil) : Nil
         stub = register_stub(method, path, query)
         stub.to_return(status: status, body: body, headers: headers)
@@ -35,18 +31,6 @@ module APIStub
       def register_subject(repo : String, number : Int32, spec : Data::SubjectSpec) : Nil
         ensure_graphql_stub
         @subjects[{repo, number}] = spec
-      end
-
-      def register_team(organisation : String, slug : String, logins : Array(String)) : Nil
-        ensure_graphql_stub
-        @teams[{organisation, slug}] = logins
-      end
-
-      def register_identity(login : String, scopes : String) : Nil
-        ensure_graphql_stub
-        raise "APIStub: identity already stubbed in this block" if @identity
-
-        @identity = GraphQLResponder::Identity.new(login, scopes)
       end
 
       def register_team(organisation : String, slug : String, logins : Array(String)) : Nil
