@@ -7,6 +7,8 @@ module APIStub
         @registered_keys = Set(String).new
         @subjects = GraphQLResponder::Subjects.new
         @teams = GraphQLResponder::Teams.new
+        @unsubscribes = GraphQLResponder::Unsubscribes.new
+        @unsubscribe_scope = GraphQLResponder::UnsubscribeScope.new
         @identity = nil.as(GraphQLResponder::Identity?)
         @graphql_failure = nil.as(GraphQLResponder::Failure?)
       end
@@ -38,6 +40,16 @@ module APIStub
         @teams[{organisation, slug}] = logins
       end
 
+      def register_unsubscribe(node_id : String, error : String?) : Nil
+        ensure_graphql_stub
+        @unsubscribes[node_id] = error
+      end
+
+      def reject_unsubscribes : Nil
+        ensure_graphql_stub
+        @unsubscribe_scope.missing = true
+      end
+
       def register_identity(login : String, scopes : String) : Nil
         ensure_graphql_stub
         raise "APIStub: identity already stubbed in this block" if @identity
@@ -57,7 +69,7 @@ module APIStub
         return unless @registered_keys.add?(key)
 
         WebMock.stub(:post, GitHub.url(GRAPHQL_PATH)).to_return do |request|
-          GraphQLResponder.new(@subjects, @teams, @identity, @graphql_failure).respond(request)
+          GraphQLResponder.new(@subjects, @teams, @unsubscribes, @unsubscribe_scope, @identity, @graphql_failure).respond(request)
         end
       end
 

@@ -23,8 +23,9 @@ module Shoo
       include Base
 
       getter purge_reason : PurgeReason
+      getter subject_id : String?
 
-      def initialize(@github_notification : GitHub::Notification, @purge_reason : PurgeReason) : Nil
+      def initialize(@github_notification : GitHub::Notification, @purge_reason : PurgeReason, @subject_id : String?) : Nil
       end
     end
   end

@@ -6,17 +6,24 @@ module APIStub
     struct GraphQLResponder
       alias Subjects = Hash(Tuple(String, Int32), Data::SubjectSpec)
       alias Teams = Hash(Tuple(String, String), Array(String))
+      alias Unsubscribes = Hash(String, String?)
+
+      class UnsubscribeScope
+        property? missing : Bool = false
+      end
 
       record Failure, status : Int32, body : String
       record Identity, login : String, scopes : String
 
-      REPOSITORY = /(\w+): repository\(owner: "([^"]+)", name: "([^"]+)"\)/
-      SUBJECT    = /(\w+): issueOrPullRequest\(number: (\d+)\)/
-      TEAM       = /organization\(login: "([^"]+)"\) \{ team\(slug: "([^"]+)"\)/
-      COMMENTS   = "comments(last:"
-      VIEWER     = "query { viewer {"
+      REPOSITORY  = /(\w+): repository\(owner: "([^"]+)", name: "([^"]+)"\)/
+      SUBJECT     = /(\w+): issueOrPullRequest\(number: (\d+)\)/
+      TEAM        = /organization\(login: "([^"]+)"\) \{ team\(slug: "([^"]+)"\)/
+      UNSUBSCRIBE = /(\w+): updateSubscription\(input: \{subscribableId: "([^"]+)", state: UNSUBSCRIBED\}\)/
+      COMMENTS    = "comments(last:"
+      VIEWER      = "query { viewer {"
+      MUTATION    = "mutation {"
 
-      def initialize(@subjects : Subjects, @teams : Teams, @identity : Identity?, @failure : Failure?) : Nil
+      def initialize(@subjects : Subjects, @teams : Teams, @unsubscribes : Unsubscribes, @unsubscribe_scope : UnsubscribeScope, @identity : Identity?, @failure : Failure?) : Nil
       end
 
       def respond(request : HTTP::Request) : HTTP::Client::Response
@@ -32,6 +39,10 @@ module APIStub
           return HTTP::Client::Response.new(200, {data: {viewer: {login: identity.login}}}.to_json, headers)
         end
 
+        if query.starts_with?(MUTATION)
+          return HTTP::Client::Response.new(200, unsubscribe_envelope(query))
+        end
+
         if match = TEAM.match(query)
           return HTTP::Client::Response.new(200, team_envelope(match[1], match[2]))
         end
@@ -43,6 +54,35 @@ module APIStub
         members = @teams[{organisation, slug}]?
         team = members ? {members: {pageInfo: {hasNextPage: false, endCursor: nil}, nodes: members.map { |login| {login: login} }}} : nil
         {data: {organization: {team: team}}}.to_json
+      end
+
+      private def unsubscribe_envelope(query : String) : String
+        if @unsubscribe_scope.missing?
+          return {errors: [{type: "INSUFFICIENT_SCOPES", message: "The 'updateSubscription' field requires one of the following scopes: ['notifications']"}]}.to_json
+        end
+
+        errors = [] of NamedTuple(message: String, path: Array(String))
+
+        data = query.scan(UNSUBSCRIBE).to_h do |match|
+          alias_name, node_id = match[1], match[2]
+          raise "APIStub: no unsubscribe registered for #{node_id}" unless @unsubscribes.has_key?(node_id)
+
+          if error = @unsubscribes[node_id]
+            errors << {message: error, path: [alias_name]}
+            {alias_name, nil}
+          else
+            {alias_name, {clientMutationId: nil}}
+          end
+        end
+
+        {data: data, errors: errors}.to_json
+      end
+
+      private def with_node_id(node : String, node_id : String) : String
+        case parsed = JSON.parse(node).as_h?
+        in Hash then parsed.merge({"id" => JSON::Any.new(node_id)}).to_json
+        in Nil  then node
+        end
       end
 
       private def subjects_envelope(query : String) : String
@@ -67,7 +107,8 @@ module APIStub
                   errors << {message: error, path: [repository_alias, subject_alias]}
                 end
 
-                json.field(subject_alias) { json.raw(wants_comments ? spec.comments : spec.node) }
+                node_id = GitHub.node_id(repository, match[5].to_i)
+                json.field(subject_alias) { json.raw(wants_comments ? spec.comments : with_node_id(spec.node, node_id)) }
               end
             end
             json.end_object unless repository_alias.empty?

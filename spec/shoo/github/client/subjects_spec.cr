@@ -10,7 +10,7 @@ describe Shoo::GitHub::Client::Subjects do
       {
         "data": {
           "r0": {
-            "s0": {"__typename": "Issue", "state": "OPEN", "closedAt": null, "author": {"login": "octocat"}},
+            "s0": {"__typename": "Issue", "id": "I_1", "state": "OPEN", "closedAt": null, "author": {"login": "octocat"}},
             "s1": null
           },
           "r1": null
@@ -25,7 +25,7 @@ describe Shoo::GitHub::Client::Subjects do
     outcomes = Shoo::GitHub::Client::Subjects.new(GraphQL::Client.new(transport)).fetch([ref(1), ref(2), ref(3, "other")], with_reviewers: false)
 
     outcomes = outcomes.as(Shoo::GitHub::Client::Subjects::Outcomes)
-    outcomes[ref(1)].should eq(Shoo::GitHub::Subject::Issue.new("octocat", false, nil))
+    outcomes[ref(1)].should eq(Shoo::GitHub::Subject::Issue.new("I_1", "octocat", false, nil))
     outcomes[ref(2)].should eq(Shoo::GitHub::Unresolved.new("Could not resolve #2"))
     outcomes[ref(3, "other")].should eq(Shoo::GitHub::Unresolved.new("Could not resolve repository"))
   end

@@ -9,7 +9,8 @@ module GraphQL
   #   end
   module Document
     alias Scalar = String | Int::Primitive | Float::Primitive | Bool | EnumValue?
-    alias Argument = Scalar
+    alias Input = Hash(String, Scalar)
+    alias Argument = Scalar | Input
 
     def self.query(& : ->) : String
       String.build do |io|
@@ -19,8 +20,24 @@ module GraphQL
       end
     end
 
-    def self.encode(io : IO, value : Scalar) : Nil
+    def self.mutation(& : ->) : String
+      String.build do |io|
+        io << "mutation {"
+        with Builder.new(io) yield
+        io << " }"
+      end
+    end
+
+    def self.encode(io : IO, value : Argument) : Nil
       case value
+      in Input
+        io << '{'
+        value.each_with_index do |(key, field_value), index|
+          io << ", " unless index.zero?
+          io << key << ": "
+          encode(io, field_value)
+        end
+        io << '}'
       in EnumValue                                           then io << value.name
       in String, Int::Primitive, Float::Primitive, Bool, Nil then value.to_json(io)
       end

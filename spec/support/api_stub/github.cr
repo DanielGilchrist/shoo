@@ -7,6 +7,7 @@ require "./github/resources/notifications"
 require "./github/resources/graphql"
 require "./github/resources/user"
 require "./github/resources/teams"
+require "./github/resources/subscriptions"
 
 module APIStub
   module GitHub
@@ -14,6 +15,10 @@ module APIStub
 
     def self.url(path : String) : String
       "#{BASE_URL}#{path}"
+    end
+
+    def self.node_id(repo : String, number : Int32) : String
+      "node:#{repo}##{number}"
     end
 
     def self.stub(& : ->) : Nil

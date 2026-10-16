@@ -3,6 +3,7 @@ module Shoo
     module Queries
       ::GraphQL.fragment IssueOrPullRequestWithReviewersFragment do
         on PullRequest do
+          id String
           state String
           merged Bool
           mergedAt Time?
@@ -20,6 +21,7 @@ module Shoo
         end
 
         on Issue do
+          id String
           state String
           closedAt Time?
           author? { login String }

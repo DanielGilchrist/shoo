@@ -5,6 +5,7 @@ module GraphQL
     alias Path = Array(String | Int32)
 
     getter message : String
+    getter type : String?
     getter path : Path?
     getter locations : Array(Location)?
     getter extensions : JSON::Any?

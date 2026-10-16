@@ -124,7 +124,6 @@ module Shoo
       end
 
       private def perform_purge(context : Context, removing : Array(::Shoo::Notification::Purged)) : Nil
-        config = context.config
         io = context.stdout
 
         io.puts "#{"Purging".colorize.red.bold} #{removing.size} notifications..."
@@ -133,11 +132,13 @@ module Shoo
         notifications_client = context.client.notifications
         attempted = 0
 
+        unsubscribe_failures = unsubscribe(context, removing)
+
         failures = Future.all(removing) do |notification|
-          error = purge_notification(notifications_client, config, notification)
+          message = unsubscribe_failures[notification.id]? || notifications_client.mark_as_done(notification.id).try(&.message)
           attempted += 1
           status.update("Purged #{attempted}/#{removing.size}")
-          {notification, error} if error
+          {notification, message} if message
         end.compact
 
         status.finish("#{removing.size - failures.size} purged, #{context.client.request_count} requests")
@@ -147,21 +148,38 @@ module Shoo
 
         unless failures.empty?
           io.puts "Failed to purge #{failures.size.to_s.colorize.red.bold} notifications:"
-          failures.each do |notification, error|
-            io.puts "   #{notification.subject.title.colorize.light_gray}: #{error.message}"
+          failures.each do |notification, message|
+            io.puts "   #{notification.subject.title.colorize.light_gray}: #{message}"
           end
         end
       end
 
-      private def purge_notification(client : GitHub::Client::Notifications, config : ::Shoo::Config, notification : ::Shoo::Notification::Purged) : GitHub::Error?
-        rules = config.purge_rules_for(notification.repository_name)
+      private def unsubscribe(context : Context, removing : Array(::Shoo::Notification::Purged)) : Hash(String, String)
+        config = context.config
+        client = context.client
+        unsubscribing = removing.select { |notification| config.purge_rules_for(notification.repository_name).unsubscribe? }
+        failures = Hash(String, String).new
+        return failures if unsubscribing.empty?
 
-        if rules.unsubscribe?
-          error = client.unsubscribe(notification.id)
-          return error if error
+        context.status.update("Unsubscribing from #{unsubscribing.size} threads")
+
+        by_subject, by_thread = unsubscribing.partition(&.subject_id)
+
+        case outcomes = client.subscriptions.unsubscribe(by_subject.compact_map(&.subject_id))
+        in GitHub::Client::Subscriptions::MissingScope
+          by_thread = unsubscribing
+        in GitHub::Client::Subscriptions::Outcomes
+          by_subject.each do |notification|
+            unresolved = notification.subject_id.try { |subject_id| outcomes[subject_id]? }
+            failures[notification.id] = unresolved.message if unresolved
+          end
         end
 
-        client.mark_as_done(notification.id)
+        Future.all(by_thread) { |notification| {notification.id, client.notifications.unsubscribe(notification.id)} }.each do |id, error|
+          failures[id] = error.message if error
+        end
+
+        failures
       end
 
       private def show_notification_detail(io : IO, notification : ::Shoo::Notification::Purged, number : Int32, reason_width : Int32, purge_reason_width : Int32) : Nil

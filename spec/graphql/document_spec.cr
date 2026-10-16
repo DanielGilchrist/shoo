@@ -23,4 +23,13 @@ describe GraphQL::Document do
 
     text.should eq(%(query { search(query: "say \\"hi\\"", first: 5, ratio: 0.5, open: true, after: null, type: ISSUE) { id } }))
   end
+
+  it "composes aliased mutations with input objects" do
+    text = GraphQL::Document.mutation do
+      field("updateSubscription", DocumentSpecNode, as: "u0",
+        input: GraphQL::Document::Input{"subscribableId" => "PR_1", "state" => GraphQL::Document::EnumValue.new("UNSUBSCRIBED")})
+    end
+
+    text.should eq(%(mutation { u0: updateSubscription(input: {subscribableId: "PR_1", state: UNSUBSCRIBED}) { id } }))
+  end
 end

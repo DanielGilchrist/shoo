@@ -17,6 +17,10 @@ module Shoo
         Subjects.new(@request.graphql)
       end
 
+      def subscriptions : Subscriptions
+        Subscriptions.new(@request.graphql)
+      end
+
       def teams : Teams
         Teams.new(@request.graphql)
       end

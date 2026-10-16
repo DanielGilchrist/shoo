@@ -17,6 +17,10 @@ module APIStub
         delete("/notifications/threads/#{id}", success, message)
       end
 
+      def unsubscribe(id : String, success : Bool = true, message : String = "Server Error") : Nil
+        delete("/notifications/threads/#{id}/subscription", success, message)
+      end
+
       private def build_payloads(specs : Array(Data::NotificationSpec)) : Array(Data::NotificationPayload)
         Data.resolve_ids(specs).map do |(spec, id)|
           url = nil

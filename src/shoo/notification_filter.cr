@@ -54,7 +54,7 @@ module Shoo
         in KeepReason
           notifications << Notification::Kept.new(github_notification, verdict)
         in PurgeReason
-          notifications << Notification::Purged.new(github_notification, verdict)
+          notifications << Notification::Purged.new(github_notification, verdict, subject_id_for(github_notification))
         in Failure
           return verdict
         end
@@ -240,6 +240,13 @@ module Shoo
       in Nil                then nil
       in GitHub::Unresolved then ref
       in GitHub::SubjectRef then @subjects[ref]?
+      end
+    end
+
+    private def subject_id_for(github_notification : GitHub::Notification) : String?
+      case outcome = subject_outcome_for(github_notification)
+      in Subject                 then outcome.node_id
+      in GitHub::Unresolved, Nil then nil
       end
     end
 

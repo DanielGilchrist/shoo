@@ -47,9 +47,9 @@ module Shoo
         private def subject(fragment : Fragment) : Outcome
           case node = fragment.variant
           in Fragment::PullRequest
-            Subject::PullRequest.new(node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, [] of String)
+            Subject::PullRequest.new(node.id, node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, [] of String)
           in Fragment::Issue
-            Subject::Issue.new(node.author.try(&.login), node.state == CLOSED, node.closed_at)
+            Subject::Issue.new(node.id, node.author.try(&.login), node.state == CLOSED, node.closed_at)
           in Fragment::Unknown
             Unresolved.new("unexpected subject type #{node.typename}")
           end
@@ -58,9 +58,9 @@ module Shoo
         private def subject(fragment : WithReviewersFragment) : Outcome
           case node = fragment.variant
           in WithReviewersFragment::PullRequest
-            Subject::PullRequest.new(node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, requested_team_slugs(node))
+            Subject::PullRequest.new(node.id, node.author.try(&.login), node.merged, node.merged_at, node.state == CLOSED, node.closed_at, requested_team_slugs(node))
           in WithReviewersFragment::Issue
-            Subject::Issue.new(node.author.try(&.login), node.state == CLOSED, node.closed_at)
+            Subject::Issue.new(node.id, node.author.try(&.login), node.state == CLOSED, node.closed_at)
           in WithReviewersFragment::Unknown
             Unresolved.new("unexpected subject type #{node.typename}")
           end
